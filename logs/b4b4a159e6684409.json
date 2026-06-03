@@ -1,0 +1,10 @@
+{
+  "publishedAt": "2026-06-03T14:04:55.789Z",
+  "source": "branch-test",
+  "hash": "b4b4a159e668440934e670678a8b0e0b5d130e510abce84a7eed0db8594140dd",
+  "meta": {},
+  "game": {
+    "test": "pollution-fix-verify",
+    "ts": 1
+  }
+}
