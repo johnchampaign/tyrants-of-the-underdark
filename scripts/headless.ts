@@ -94,7 +94,7 @@ function runOneGame(gameIdx: number): {
   turns: number;
   endReason: string;
   trace: MoveRecord[];
-  finalLog: string[];
+  finalLog: TyrantsState['log'];
   turnLogs: TyrantsState['turnLogs'];
   snapshots: TyrantsState['snapshots'];
   finalG: TyrantsState;

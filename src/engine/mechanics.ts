@@ -5,6 +5,7 @@
 // resource pools, or scores directly. They call Mechanics.
 
 import type { TyrantsState, CardRef } from '../game';
+import { logEvent, type LogMeta } from './log';
 
 function p(G: TyrantsState, playerId: string) {
   const player = G.players[playerId];
@@ -13,8 +14,8 @@ function p(G: TyrantsState, playerId: string) {
 }
 
 export const Mechanics = {
-  log(G: TyrantsState, line: string) {
-    G.log.push(line);
+  log(G: TyrantsState, line: string, meta?: LogMeta) {
+    logEvent(G, line, meta);
   },
 
   /** Mark that hidden information just became visible (a card drawn, the
@@ -25,13 +26,15 @@ export const Mechanics = {
     if (G.undoStack && G.undoStack.length > 0) G.undoStack = [];
   },
 
-  gainPower(G: TyrantsState, playerId: string, n: number) {
+  gainPower(G: TyrantsState, playerId: string, n: number, source?: string) {
     p(G, playerId).power += n;
-    if (n !== 0) Mechanics.log(G, `P${Number(playerId) + 1} +${n} Power`);
+    if (n !== 0) Mechanics.log(G, `P${Number(playerId) + 1} +${n} Power${source ? ` from ${source}` : ''}`,
+      { kind: 'power.gain', payload: { amount: n, ...(source ? { source } : {}) }, side: playerId });
   },
-  gainInfluence(G: TyrantsState, playerId: string, n: number) {
+  gainInfluence(G: TyrantsState, playerId: string, n: number, source?: string) {
     p(G, playerId).influence += n;
-    if (n !== 0) Mechanics.log(G, `P${Number(playerId) + 1} +${n} Influence`);
+    if (n !== 0) Mechanics.log(G, `P${Number(playerId) + 1} +${n} Influence${source ? ` from ${source}` : ''}`,
+      { kind: 'influence.gain', payload: { amount: n, ...(source ? { source } : {}) }, side: playerId });
   },
   expendPower(G: TyrantsState, playerId: string, n: number): boolean {
     const pl = p(G, playerId);
@@ -48,7 +51,8 @@ export const Mechanics = {
 
   gainVpTokens(G: TyrantsState, playerId: string, n: number) {
     p(G, playerId).vp += n;
-    Mechanics.log(G, `P${Number(playerId) + 1} +${n} VP`);
+    Mechanics.log(G, `P${Number(playerId) + 1} +${n} VP`,
+      { kind: 'vp.gain', payload: { amount: n }, side: playerId });
   },
 
   draw(G: TyrantsState, playerId: string, n: number, random?: { Number(): number }) {
@@ -137,7 +141,8 @@ export const Mechanics = {
       return;
     }
     pl.innerCircle.push(card);
-    Mechanics.log(G, `P${Number(playerId) + 1} promoted ${card.name}`);
+    Mechanics.log(G, `P${Number(playerId) + 1} promoted ${card.name}`,
+      { kind: 'card.promote', payload: { card: card.name }, side: playerId });
   },
 
   devour(G: TyrantsState, card: CardRef) {
@@ -146,7 +151,8 @@ export const Mechanics = {
       Mechanics.log(G, `${card.name} cannot be devoured (returns to supply)`);
       return;
     }
-    Mechanics.log(G, `${card.name} devoured`);
+    Mechanics.log(G, `${card.name} devoured`,
+      { kind: 'card.devour', payload: { card: card.name } });
     // Track the devoured card so cards that interact with the pile (Ghost
     // — "treat the top of devoured as if in market") can reference it.
     // turn.onBegin backfills the field on legacy saves.
@@ -163,7 +169,8 @@ export const Mechanics = {
     // everyone — recruiting from the market is therefore not undoable.
     if (refill) Mechanics.markInfoRevealed(G);
     G.market.row[marketIndex] = refill;
-    Mechanics.log(G, `P${Number(playerId) + 1} recruited ${card.name}`);
+    Mechanics.log(G, `P${Number(playerId) + 1} recruited ${card.name}`,
+      { kind: 'card.recruit', payload: { card: card.name, from: 'market' }, side: playerId });
     return true;
   },
 
@@ -179,7 +186,8 @@ export const Mechanics = {
     if (G.auxStacks[stack] <= 0) return false;
     p(G, playerId).discard.push(card);
     G.auxStacks[stack] -= 1;
-    Mechanics.log(G, `P${Number(playerId) + 1} recruited ${card.name} (${G.auxStacks[stack]} left in stack)`);
+    Mechanics.log(G, `P${Number(playerId) + 1} recruited ${card.name} (${G.auxStacks[stack]} left in stack)`,
+      { kind: 'card.recruit', payload: { card: card.name, from: stack }, side: playerId });
     return true;
   },
 

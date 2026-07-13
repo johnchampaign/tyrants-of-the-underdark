@@ -5,6 +5,7 @@
 // affected sites inside the same call — callers should NOT touch G.troops / G.spies directly.
 
 import type { TyrantsState, Color } from '../game';
+import { logEvent } from './log';
 import { ROUTES, ADJACENCY } from '../data/routes';
 import { TROOP_SPACES_BY_ID, sitesSpaces, routeSpaces } from '../data/troop-spaces';
 import { SITES_BY_ID } from '../data/sites';
@@ -179,9 +180,11 @@ export function recomputeSiteControl(G: TyrantsState, siteIds: SiteId[]) {
       const previous = m.holder;
       m.holder = newController;
       if (newController) {
-        G.log.push(`${m.siteId} control marker → ${newController}${previous ? ` (from ${previous})` : ' (from map)'}`);
+        logEvent(G, `${m.siteId} control marker → ${newController}${previous ? ` (from ${previous})` : ' (from map)'}`,
+          { kind: 'site.control', payload: { site: m.siteId, controller: newController, previous: previous ?? null }, side: null });
       } else if (previous) {
-        G.log.push(`${m.siteId} control marker → returned to map (no controller)`);
+        logEvent(G, `${m.siteId} control marker → returned to map (no controller)`,
+          { kind: 'site.control', payload: { site: m.siteId, controller: null, previous }, side: null });
       }
     }
 
@@ -246,7 +249,8 @@ function payMarkerEffect(G: TyrantsState, m: { siteId: string; controlInfluence:
   const suffix = upgrade
     ? ' (upgrade to TOTAL CONTROL)'
     : (tc ? ' (TOTAL CONTROL)' : '');
-  G.log.push(`P${Number(pid) + 1} ${parts.join(', ')} from ${m.siteId} control marker${suffix}`);
+  logEvent(G, `P${Number(pid) + 1} ${parts.join(', ')} from ${m.siteId} control marker${suffix}`,
+    { kind: 'marker.reward', payload: { site: m.siteId, influence: inf, vp, totalControl: tc }, side: pid });
 }
 
 /** Used by turn.onBegin to pay markers the active player already held from a

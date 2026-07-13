@@ -84,7 +84,8 @@ const forcePlayerOfAssassinatedColorToDiscard: EffectHandler = ctx => {
     const killed = assassinateTroop(ctx.G, spaceId);
     if (killed === 'white') me.trophyHall.white += 1;
     else if (killed) me.trophyHall[killed] = (me.trophyHall[killed] ?? 0) + 1;
-    Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} assassinated ${killed} at ${spaceId}`);
+    Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} assassinated ${killed} at ${spaceId}`,
+      { kind: 'troop.assassinate', payload: { site: spaceId, target: killed }, side: ctx.actorId });
 
     // Transition to force-discard phase, recording the killed color
     state = { phase: 'force-discard', killedColor: killed, fdState: null };
@@ -312,7 +313,8 @@ registerAll({
                             const n = Math.floor(totalTrophies(me) / 3);
                             if (n > 0) {
                               me.power += n;
-                              ctx.G.log.push(`P${Number(ctx.actorId) + 1} +${n} Power from Beholder (${totalTrophies(me)} trophies)`);
+                              Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} +${n} Power from Beholder (${totalTrophies(me)} trophies)`,
+                                { kind: 'power.gain', payload: { amount: n, source: 'Beholder' }, side: ctx.actorId });
                             }
                             return true;
                           })),
@@ -376,7 +378,8 @@ registerAll({
                           // Loop complete or declined — grant 1 influence per total kills.
                           if (totalKills > 0) {
                             me.influence += totalKills;
-                            ctx.G.log.push(`P${Number(ctx.actorId) + 1} +${totalKills} Influence from Death Tyrant (${totalKills} troop${totalKills === 1 ? '' : 's'} assassinated)`);
+                            Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} +${totalKills} Influence from Death Tyrant (${totalKills} troop${totalKills === 1 ? '' : 's'} assassinated)`,
+                              { kind: 'influence.gain', payload: { amount: totalKills, source: 'Death Tyrant' }, side: ctx.actorId });
                           }
                           ctx.handlerState = null;
                           return true;
@@ -392,7 +395,8 @@ registerAll({
                             // Reveals the top of your deck — bars within-turn undo.
                             Mechanics.markInfoRevealed(ctx.G);
                             me.innerCircle.push(top);
-                            ctx.G.log.push(`P${Number(ctx.actorId) + 1} promoted ${top.name} from top of deck`);
+                            Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} promoted ${top.name} from top of deck`,
+                              { kind: 'card.promote', payload: { card: top.name, source: 'Elder Brain' }, side: ctx.actorId });
                             return true;
                           }),
                           playForeignCard({

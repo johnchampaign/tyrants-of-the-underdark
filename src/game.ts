@@ -3,6 +3,8 @@ import { INVALID_MOVE } from 'boardgame.io/core';
 import './engine/handlers'; // register handlers
 import { CardRegistry } from './engine/registry';
 import { Mechanics } from './engine/mechanics';
+import { logEvent, ensureStructuredLog, nextLogSeq, logLineText } from './engine/log';
+import { appendGameLog, type GameLogEntry } from 'digital-boardgame-framework';
 import { lookupCard, cardsInDeck } from './card-data';
 import type { EffectContext, PendingChoice } from './engine/types';
 import { SITES } from './data/sites';
@@ -123,7 +125,13 @@ export interface TyrantsState {
    *  player-recruitable stack. */
   auxStacks: { houseGuards: number; priestesses: number };
   players: Record<string, PlayerData>;
-  log: string[];
+  /** Structured game log (framework log-format v2). Legacy saves carried
+   *  string[] here — ensureStructuredLog upgrades them on load/turn start. */
+  log: GameLogEntry[];
+  /** Turn number stamped onto log entries (set at turn.onBegin). */
+  logTurn?: number;
+  /** Acting seat stamped onto log entries (set at turn.onBegin). */
+  logSide?: string | null;
   /** Set while an effect is awaiting a player/AI choice. */
   pendingChoice: (PendingChoice & { playerId: string; cardKey: string }) | null;
   /** Opaque per-card state preserved across resumptions of the same effect. */
@@ -169,7 +177,8 @@ export interface TyrantsState {
    *  Used by end-of-turn promote-a-played-card effects. */
   cardsPlayedThisTurn: CardRef[];
 
-  /** Log index marker for the start of the current turn. */
+  /** Log SEQ marker for the start of the current turn (seq-based, not an
+   *  index, so the log cap can trim old entries without corrupting slices). */
   turnLogStart: number;
   /** Captured per-turn log slices. Each entry is one completed turn. */
   turnLogs: Array<{ turn: number; playerId: string; color: Color; lines: string[] }>;
@@ -522,7 +531,7 @@ export const TyrantsGame: Game<TyrantsState> = {
       // Permanent stacks per rulebook components (page 2): 15 of each.
       auxStacks: { houseGuards: 15, priestesses: 15 },
       players,
-      log: [startLog],
+      log: appendGameLog<string>([], { turn: 0, side: String(firstSeat), kind: 'game.start', msg: startLog, payload: { firstSeat } }),
       pendingChoice: null,
       pausedHandlerState: null,
       troops,
@@ -563,9 +572,15 @@ export const TyrantsGame: Game<TyrantsState> = {
       next: ({ ctx }) => (ctx.playOrderPos + 1) % ctx.numPlayers,
     },
     onBegin: ({ G, ctx }) => {
-      // Mark where this turn's log lines begin so onEnd can slice them out.
-      G.turnLogStart = G.log.length;
-      G.log.push(`Turn: P${Number(ctx.currentPlayer) + 1} (${G.players[ctx.currentPlayer].color})`);
+      // Legacy saves (and old online snapshots not yet migrated) carry a
+      // string[] log — upgrade before anything reads/writes entries.
+      ensureStructuredLog(G);
+      G.logTurn = ctx.turn;
+      G.logSide = ctx.currentPlayer;
+      // Mark where this turn's log entries begin (by seq) so onEnd can slice them out.
+      G.turnLogStart = nextLogSeq(G);
+      logEvent(G, `Turn: P${Number(ctx.currentPlayer) + 1} (${G.players[ctx.currentPlayer].color})`,
+        { kind: 'turn.start', payload: { player: ctx.currentPlayer, color: G.players[ctx.currentPlayer].color }, side: ctx.currentPlayer });
       G.cardsPlayedThisTurn = [];
       G.pendingEotPromotions = [];
       G.pendingEotInnerCircleVp = [];
@@ -624,7 +639,7 @@ export const TyrantsGame: Game<TyrantsState> = {
     onEnd: ({ G, ctx, random }) => {
       // Capture this turn's log slice for the per-turn summary modal. We do this for
       // every turn (including setup deploys) so the human can review what happened.
-      const lines = G.log.slice(G.turnLogStart);
+      const lines = G.log.filter(e => typeof e !== 'string' && e.seq >= G.turnLogStart).map(logLineText);
       G.turnLogs.push({
         turn: ctx.turn,
         playerId: ctx.currentPlayer,
@@ -700,7 +715,8 @@ export const TyrantsGame: Game<TyrantsState> = {
       const color = player.color;
       if (!deployTroop(G, color, space.id)) return INVALID_MOVE;
       player.barracksLeft -= 1;
-      Mechanics.log(G, `P${Number(pid) + 1} deployed starting troop at ${site.name}`);
+      Mechanics.log(G, `P${Number(pid) + 1} deployed starting troop at ${site.name}`,
+        { kind: 'troop.deploy', payload: { site: siteId, setup: true }, side: pid });
 
       // Setup complete once everyone has placed one troop.
       const placed = Object.values(G.troops).filter(t => t && t !== 'white').length;
@@ -730,7 +746,8 @@ export const TyrantsGame: Game<TyrantsState> = {
       pushUndoSnapshot(G, ctx.currentPlayer);
 
       p.hand.splice(handIndex, 1);
-      G.log.push(`P${Number(pid) + 1} played ${card.name}`);
+      logEvent(G, `P${Number(pid) + 1} played ${card.name}`,
+        { kind: 'card.play', payload: { card: card.name }, side: pid });
 
       // Reset the per-card deploy trace; Gibbering Mouther etc. read this to find
       // every space they deployed to during resolution.
@@ -1013,7 +1030,8 @@ export const TyrantsGame: Game<TyrantsState> = {
         return INVALID_MOVE;
       }
       p.barracksLeft -= 1;
-      Mechanics.log(G, `P${Number(pid) + 1} deployed at ${spaceId} (barracks: ${p.barracksLeft})`);
+      Mechanics.log(G, `P${Number(pid) + 1} deployed at ${spaceId} (barracks: ${p.barracksLeft})`,
+        { kind: 'troop.deploy', payload: { site: spaceId }, side: pid });
       checkEndGameTriggers(G, ctx);
     },
 
@@ -1035,7 +1053,8 @@ export const TyrantsGame: Game<TyrantsState> = {
       const killed = assassinateTroop(G, spaceId);
       if (killed === 'white') p.trophyHall.white += 1;
       else if (killed) p.trophyHall[killed] = (p.trophyHall[killed] ?? 0) + 1;
-      Mechanics.log(G, `P${Number(pid) + 1} assassinated ${killed} at ${spaceId}`);
+      Mechanics.log(G, `P${Number(pid) + 1} assassinated ${killed} at ${spaceId}`,
+        { kind: 'troop.assassinate', payload: { site: spaceId, target: killed }, side: pid });
     },
 
     returnEnemySpy: ({ G, ctx }, siteId: string, targetColor: Color) => {
@@ -1084,7 +1103,9 @@ export const TyrantsGame: Game<TyrantsState> = {
       // The decoded codec never carries an undo stack (peeled on encode), and
       // loading a saved/rewound state starts a fresh undo history.
       G.undoStack = [];
-      G.log.push('[state loaded from codec]');
+      // The pasted codec may predate the structured log (string[]).
+      ensureStructuredLog(G);
+      logEvent(G, '[state loaded from codec]', { kind: 'system', side: null });
     },
 
     /** Step-by-step within-turn undo. Pops the most recent restore-point off

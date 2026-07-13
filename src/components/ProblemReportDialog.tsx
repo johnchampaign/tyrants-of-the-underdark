@@ -9,6 +9,7 @@ import type { TyrantsState } from '../game';
 import type { OnlineReportCategory } from '../App';
 import { recordFiledReport } from '../bug-report-tracker';
 import { relayBaseUrl } from '../relay-url';
+import { logLineText } from '../engine/log';
 
 /** Player-friendly symptom buckets shown only in online mode. The label maps
  *  to a coarse area so triage can route framework-class bugs upstream:
@@ -199,7 +200,7 @@ export function ProblemReportDialog({ G, ctxInfo, config, screenshotBase64, onli
         expected: expected.trim(),
         meta,
         stateSummary: includeState && state ? JSON.stringify(state, null, 2).slice(0, 1500) : undefined,
-        logTail: includeLog ? G.log.slice(-20) : undefined,
+        logTail: includeLog ? G.log.slice(-20).map(logLineText) : undefined,
       });
       window.open(url, '_blank', 'noopener');
       setResult({
@@ -252,7 +253,7 @@ export function ProblemReportDialog({ G, ctxInfo, config, screenshotBase64, onli
           expected: expected.trim(),
           meta,
           stateSummary: includeState && state ? JSON.stringify(state, null, 2).slice(0, 1500) : undefined,
-          logTail: includeLog ? G.log.slice(-20) : undefined,
+          logTail: includeLog ? G.log.slice(-20).map(logLineText) : undefined,
         });
         window.open(url, '_blank', 'noopener');
         setResult({

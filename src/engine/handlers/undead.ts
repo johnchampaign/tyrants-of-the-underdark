@@ -20,6 +20,7 @@ import { grant, flagEotPromote, placeSpyAtChosenSite, sequence, registerAll, tim
          assassinateAtLastPlacedSpySite,
          playerHasOwnSpy, playerCanAssassinate } from '../handler-helpers';
 import { TROOP_SPACES } from '../../data/troop-spaces';
+import { Mechanics } from '../mechanics';
 import { totalTrophies } from '../../game';
 
 registerAll({
@@ -98,7 +99,8 @@ registerAll({
                              const spies = ctx.G.spies[siteId] ?? [];
                              if (spies.length > 1) {
                                ctx.G.players[ctx.actorId].power += 3;
-                               ctx.G.log.push(`P${Number(ctx.actorId) + 1} +3 Power from Banshee (another spy at ${siteId})`);
+                               Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} +3 Power from Banshee (another spy at ${siteId})`,
+                                 { kind: 'power.gain', payload: { amount: 3, source: 'Banshee', site: siteId }, side: ctx.actorId });
                              }
                              return true;
                            })),
@@ -138,7 +140,8 @@ registerAll({
                            }
                            const me = ctx.G.players[ctx.actorId];
                            if (totalTrophies(me) >= 8) {
-                             ctx.G.log.push(`P${Number(ctx.actorId) + 1} promoted Revenant (8+ trophies)`);
+                             Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} promoted Revenant (8+ trophies)`,
+                               { kind: 'card.promote', payload: { card: 'Revenant', source: 'self-promote' }, side: ctx.actorId });
                              me.innerCircle.push({ ...ctx.card });
                              ctx.handlerState = { returnedToSupply: true };
                              return true;
@@ -182,7 +185,8 @@ registerAll({
                              const vp = Math.floor(coloredTrophies / 5);
                              if (vp > 0) {
                                me.vp += vp;
-                               ctx.G.log.push(`P${Number(ctx.actorId) + 1} +${vp} VP from Death Knight (${coloredTrophies} player trophies)`);
+                               Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} +${vp} VP from Death Knight (${coloredTrophies} player trophies)`,
+                                 { kind: 'vp.gain', payload: { amount: vp, source: 'Death Knight' }, side: ctx.actorId });
                              }
                              return true;
                            })),
@@ -243,7 +247,8 @@ registerAll({
                                  const vp = Math.floor(me.innerCircle.length / 3);
                                  if (vp > 0) {
                                    me.vp += vp;
-                                   ctx.G.log.push(`P${Number(ctx.actorId) + 1} +${vp} VP from Vampire (${me.innerCircle.length} promoted)`);
+                                   Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} +${vp} VP from Vampire (${me.innerCircle.length} promoted)`,
+                                     { kind: 'vp.gain', payload: { amount: vp, source: 'Vampire' }, side: ctx.actorId });
                                  }
                                  return true;
                                })) }),

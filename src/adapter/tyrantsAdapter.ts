@@ -16,6 +16,7 @@
 // or the hotseat client.
 
 import type { GameAdapter, GameResult } from 'digital-boardgame-framework';
+import { upgradeProseLog } from 'digital-boardgame-framework';
 import { CreateGameReducer, InitializeGame } from 'boardgame.io/internal';
 import { TyrantsGame, type TyrantsState, type Color, type CardRef } from '../game';
 import { SITES } from '../data/sites';
@@ -407,7 +408,7 @@ function resultOf(state: BgioState): GameResult<PlayerId> | null {
 // ---------------------------------------------------------------------------
 
 export const tyrantsAdapter: GameAdapter<BgioState, TyrantsAction, PlayerId> = {
-  schemaVersion: 1,
+  schemaVersion: 2,
 
   applyAction(state, action, actor) {
     // bgio's reducer is pure given (state, action) and clones internally, but
@@ -469,7 +470,18 @@ export const tyrantsAdapter: GameAdapter<BgioState, TyrantsAction, PlayerId> = {
     return resultOf(state);
   },
 
-  migrate() {
-    throw new Error('tyrantsAdapter.migrate: no migrations yet (schemaVersion 1)');
+  migrate(rawState, fromVersion) {
+    const state = rawState as BgioState;
+    if (fromVersion < 2) {
+      // v1 → v2: G.log was string[] (prose lines); wrap into structured
+      // GameLogEntry objects (kind 'legacy') so old online snapshots in
+      // Supabase keep rendering and appendGameLog can extend them.
+      const G = state.G as unknown as { log?: unknown[] };
+      if (Array.isArray(G.log) && G.log.some(l => typeof l === 'string')) {
+        G.log = upgradeProseLog(G.log.map(l =>
+          typeof l === 'string' ? l : JSON.stringify(l)));
+      }
+    }
+    return state;
   },
 };

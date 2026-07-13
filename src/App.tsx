@@ -19,6 +19,7 @@ import { FirstRunImageImport } from './components/FirstRunImageImport';
 import { PlaceholderCard } from './components/PlaceholderCard';
 import { useCachedImage, clearImageBlobUrl, evictImageFromCache } from './image-cache';
 import { cardWhiffReason } from './engine/card-targets';
+import { logLineText } from './engine/log';
 import { SITES } from './data/sites';
 import { sitesSpaces, TROOP_SPACES } from './data/troop-spaces';
 import { hasPresence, checkTokenConservation } from './engine/map-state';
@@ -561,7 +562,8 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
   useEffect(() => {
     const violations = checkTokenConservation(G);
     if (violations.length > 0) {
-      const lastLog = G.log[G.log.length - 1] ?? '(no log entries)';
+      const lastEntry = G.log[G.log.length - 1];
+      const lastLog = lastEntry ? logLineText(lastEntry) : '(no log entries)';
       for (const v of violations) {
         const sign = v.delta > 0 ? '+' : '';
         // eslint-disable-next-line no-console
@@ -2063,9 +2065,10 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
           }}>
             {G.log.length === 0
               ? <div style={{ opacity: 0.5 }}>(no log entries yet)</div>
-              : G.log.slice().reverse().map((line, i) => (
+              : G.log.slice().reverse().map((entry, i) => (
                 <div key={i} style={{ padding: '1px 0', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                  <CardLogText line={line} />
+                  {/* Legacy saves may still hold plain strings — logLineText handles both. */}
+                  <CardLogText line={logLineText(entry)} />
                 </div>
               ))}
           </div>

@@ -119,7 +119,8 @@ registerAll({
                              }
                              if (coloredTrophies >= 5) {
                                me.power += 2;
-                               ctx.G.log.push(`P${Number(ctx.actorId) + 1} +2 Power from Dragonclaw (5+ player trophies in trophy hall)`);
+                               Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} +2 Power from Dragonclaw (5+ player trophies in trophy hall)`,
+                                 { kind: 'power.gain', payload: { amount: 2, source: 'Dragonclaw' }, side: ctx.actorId });
                               }
                              return true;
                             })),

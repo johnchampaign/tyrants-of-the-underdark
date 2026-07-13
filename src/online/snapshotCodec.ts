@@ -26,9 +26,9 @@
 // NOT stripped:
 //   - log / turnLogs: measured small relative to undoStack/snapshots (see
 //     scripts/roundtrip-check.ts size report). turnLogs powers the per-turn
-//     summary modal players actually read. `log` is index-addressed by
-//     G.turnLogStart (turn.onBegin slices `G.log` from that index), so capping
-//     `log` would corrupt that slice. Both left intact.
+//     summary modal players actually read. `log` is now structured entries
+//     capped at LOG_CAP (500) by src/engine/log.ts, and G.turnLogStart is
+//     seq-based, so trimming is safe. Both left intact here.
 //
 // This file is ADDITIVE: it does not touch the engine, game.ts moves, the UI,
 // or the hotseat client. It only changes what the SERVER writes to storage.

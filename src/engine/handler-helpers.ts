@@ -264,11 +264,13 @@ export function supplantAtLastPlacedSpySite(): EffectHandler {
     if (me.barracksLeft > 0) {
       if (deployTroop(ctx.G, me.color, spaceId)) {
         me.barracksLeft -= 1;
-        Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} supplanted ${killed} at ${spaceId} (barracks: ${me.barracksLeft})`);
+        Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} supplanted ${killed} at ${spaceId} (barracks: ${me.barracksLeft})`,
+          { kind: 'troop.supplant', payload: { site: spaceId, target: killed }, side: ctx.actorId });
       }
     } else {
       me.vp += 1;
-      Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} supplanted ${killed} at ${spaceId} — barracks empty, +1 VP`);
+      Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} supplanted ${killed} at ${spaceId} — barracks empty, +1 VP`,
+        { kind: 'troop.supplant', payload: { site: spaceId, target: killed, barracksEmpty: true }, side: ctx.actorId });
     }
     return true;
   };
@@ -328,7 +330,8 @@ export function assassinateAtLastPlacedSpySite(): EffectHandler {
     const killed = assassinateTroop(ctx.G, spaceId);
     if (killed === 'white') me.trophyHall.white += 1;
     else if (killed) me.trophyHall[killed] = (me.trophyHall[killed] ?? 0) + 1;
-    Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} assassinated ${killed} at ${spaceId}`);
+    Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} assassinated ${killed} at ${spaceId}`,
+      { kind: 'troop.assassinate', payload: { site: spaceId, target: killed }, side: ctx.actorId });
     return true;
   };
 }
@@ -373,7 +376,8 @@ export function devourFromHandCost(thenEffect: EffectHandler, opts?: { promptLab
       if (!card) { ctx.handlerState = null; return true; }
       me.hand.splice(idx, 1);
       Mechanics.devour(ctx.G, card);
-      Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} devoured ${card.name} from hand`);
+      Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} devoured ${card.name} from hand`,
+      { kind: 'card.devour', payload: { card: card.name, from: 'hand' }, side: ctx.actorId });
       state = { paid: true, childState: null };
     }
     // Run the gated follow-up.
@@ -501,7 +505,8 @@ export function assassinateAtLastReturnedSpySite(): EffectHandler {
     if (!killed) return true;
     if (killed === 'white') me.trophyHall.white += 1;
     else if (killed !== me.color) me.trophyHall[killed] = (me.trophyHall[killed] ?? 0) + 1;
-    Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} assassinated ${killed} at ${spaceId}`);
+    Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} assassinated ${killed} at ${spaceId}`,
+      { kind: 'troop.assassinate', payload: { site: spaceId, target: killed }, side: ctx.actorId });
     return true;
   };
 }
@@ -548,11 +553,13 @@ export function supplantAtLastReturnedSpySite(): EffectHandler {
     if (me.barracksLeft > 0) {
       if (deployTroop(ctx.G, me.color, spaceId)) {
         me.barracksLeft -= 1;
-        Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} supplanted ${killed} at ${spaceId} (barracks: ${me.barracksLeft})`);
+        Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} supplanted ${killed} at ${spaceId} (barracks: ${me.barracksLeft})`,
+          { kind: 'troop.supplant', payload: { site: spaceId, target: killed }, side: ctx.actorId });
       }
     } else {
       me.vp += 1;
-      Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} supplanted ${killed} at ${spaceId} — barracks empty, +1 VP`);
+      Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} supplanted ${killed} at ${spaceId} — barracks empty, +1 VP`,
+        { kind: 'troop.supplant', payload: { site: spaceId, target: killed, barracksEmpty: true }, side: ctx.actorId });
     }
     return true;
   };
@@ -615,7 +622,8 @@ export function assassinateChoice(opts?: { count?: number; whiteOnly?: boolean; 
       const killed = assassinateTroop(ctx.G, spaceId);
       if (killed === 'white') ctx.G.players[ctx.actorId].trophyHall.white += 1;
       else if (killed) ctx.G.players[ctx.actorId].trophyHall[killed] = (ctx.G.players[ctx.actorId].trophyHall[killed] ?? 0) + 1;
-      Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} assassinated ${killed} at ${spaceId}`);
+      Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} assassinated ${killed} at ${spaceId}`,
+      { kind: 'troop.assassinate', payload: { site: spaceId, target: killed }, side: ctx.actorId });
       // Lock subsequent kills to this site when sameSite is set.
       const lockedSite = opts?.sameSite ? (state.site ?? siteKeyOf(spaceId)) : undefined;
       state = { remaining: state.remaining - 1, site: lockedSite };
@@ -667,7 +675,8 @@ export function deployChoice(opts?: { count?: number; anywhere?: boolean; costle
       // empty-barracks → +1 VP fallback.
       if (opts?.costless) {
         if (deployTroop(ctx.G, me.color, spaceId)) {
-          Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} placed a free troop at ${spaceId}`);
+          Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} placed a free troop at ${spaceId}`,
+            { kind: 'troop.deploy', payload: { site: spaceId, free: true }, side: ctx.actorId });
         }
       } else if (me.barracksLeft <= 0) {
         // Rulebook p.12: with empty barracks, each deploy converts to +1 VP
@@ -676,7 +685,8 @@ export function deployChoice(opts?: { count?: number; anywhere?: boolean; costle
         Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} deploy → +1 VP (barracks empty)`);
       } else if (deployTroop(ctx.G, me.color, spaceId)) {
         me.barracksLeft -= 1;
-        Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} deployed at ${spaceId} (barracks: ${me.barracksLeft})`);
+        Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} deployed at ${spaceId} (barracks: ${me.barracksLeft})`,
+        { kind: 'troop.deploy', payload: { site: spaceId }, side: ctx.actorId });
       }
       state = { remaining: state.remaining - 1 };
     }
@@ -752,11 +762,13 @@ export function supplantChoice(opts?: { whiteOnly?: boolean; anywhere?: boolean;
       if (me.barracksLeft > 0) {
         if (deployTroop(ctx.G, me.color, spaceId)) {
           me.barracksLeft -= 1;
-          Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} supplanted ${killed} at ${spaceId} (barracks: ${me.barracksLeft})`);
+          Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} supplanted ${killed} at ${spaceId} (barracks: ${me.barracksLeft})`,
+          { kind: 'troop.supplant', payload: { site: spaceId, target: killed }, side: ctx.actorId });
         }
       } else {
         me.vp += 1;
-        Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} supplanted ${killed} at ${spaceId} — barracks empty, +1 VP instead of deploy`);
+        Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} supplanted ${killed} at ${spaceId} — barracks empty, +1 VP instead of deploy`,
+        { kind: 'troop.supplant', payload: { site: spaceId, target: killed, barracksEmpty: true }, side: ctx.actorId });
       }
     }
     ctx.handlerState = null;
@@ -1314,7 +1326,7 @@ export function promoteFromDiscardChoice(opts?: { optional?: boolean }): EffectH
         const msg = me.discard.length > 0
           ? `(${name}: no cards in your discard pile to promote — cards played this turn don't count)`
           : `(${name}: your discard pile is empty — nothing to promote)`;
-        ctx.G.log?.push?.(msg);
+        Mechanics.log(ctx.G, msg);
         return true;
       }
       ctx.pendingChoice = {
@@ -1400,7 +1412,8 @@ export function devourFromInnerCircleCost(thenEffect: EffectHandler, opts?: { pr
       if (!card) { ctx.handlerState = null; return true; }
       me.innerCircle.splice(idx, 1);
       Mechanics.devour(ctx.G, card);
-      Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} devoured ${card.name} from inner circle`);
+      Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} devoured ${card.name} from inner circle`,
+      { kind: 'card.devour', payload: { card: card.name, from: 'inner-circle' }, side: ctx.actorId });
       state = { paid: true, childState: null };
     }
     const childCtx: EffectContext = {
@@ -2012,11 +2025,13 @@ export function returnAnySpiesAndSupplantAtEach(): EffectHandler {
           if (me.barracksLeft > 0) {
             if (deployTroop(ctx.G, myColor, spaceId)) {
               me.barracksLeft -= 1;
-              Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} supplanted ${killed} at ${spaceId} (barracks: ${me.barracksLeft})`);
+              Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} supplanted ${killed} at ${spaceId} (barracks: ${me.barracksLeft})`,
+          { kind: 'troop.supplant', payload: { site: spaceId, target: killed }, side: ctx.actorId });
             }
           } else {
             me.vp += 1;
-            Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} supplanted ${killed} at ${spaceId} — barracks empty, +1 VP`);
+            Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} supplanted ${killed} at ${spaceId} — barracks empty, +1 VP`,
+        { kind: 'troop.supplant', payload: { site: spaceId, target: killed, barracksEmpty: true }, side: ctx.actorId });
           }
         }
       }
@@ -2688,7 +2703,8 @@ export function recruitFromDevouredPile(): EffectHandler {
       return true;
     }
     ctx.G.players[ctx.actorId].discard.push(top);
-    Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} recruited ${top.name} from devoured pile (cost ${data.cost})`);
+    Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} recruited ${top.name} from devoured pile (cost ${data.cost})`,
+      { kind: 'card.recruit', payload: { card: top.name, from: 'devoured-pile' }, side: ctx.actorId });
     return true;
   };
 }
