@@ -1858,7 +1858,11 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
             <div style={{ fontWeight: 'bold' }}>{G.pendingChoice.prompt}</div>
             <div style={{ marginTop: 8, fontSize: 12, opacity: 0.8 }}>
               For P{Number(G.pendingChoice.playerId) + 1}.
-              {G.pendingChoice.kind === 'select-card-in-hand' && ' Click a card in hand to discard it.'}
+              {/* Not always a discard — the same prompt kind covers Focus
+                  reveals (card stays in hand) and devour-from-hand. The
+                  prompt text above already says which; keep the hint neutral
+                  so it can't contradict it. */}
+              {G.pendingChoice.kind === 'select-card-in-hand' && ' Click a card in your hand.'}
               {G.pendingChoice.kind === 'select-site' && ' Click a glowing site on the map.'}
               {G.pendingChoice.kind === 'select-troop-space' && ' Click a glowing troop space on the map.'}
             </div>

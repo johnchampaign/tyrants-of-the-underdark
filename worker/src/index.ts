@@ -23,13 +23,45 @@ interface Env {
 // GitHub Pages deploy. Named to avoid colliding with the logs/ directory.
 const LOG_BRANCH = 'game-logs';
 
+// Issue-body budgeting. GitHub hard-caps a body at 65536 chars; stay under it
+// with headroom so the codec block below is the only thing that ever gets
+// clipped, and clipped on a boundary that still decodes.
+const BODY_BUDGET = 60000;
+const SUMMARY_BUDGET = 15000;
+const SECTION_SEP = '\n\n---\n\n';
+
+/** Prose text for one log entry. The in-game log is a list of framework
+ *  log-format v2 entries (objects carrying `msg`), but older clients send
+ *  plain strings — accept both. Joining objects directly is what produced a
+ *  wall of "[object Object]" in reports and lost the evidence entirely. */
+export function logLineText(e: string | { msg?: string; kind?: string } | null | undefined): string {
+  if (typeof e === 'string') return e;
+  if (e && typeof e === 'object') return e.msg ?? e.kind ?? JSON.stringify(e);
+  return String(e);
+}
+
+/** Split the long base64 snapshot codec out of the state summary so the two
+ *  can be size-budgeted (and truncated) independently. */
+export function splitSnapshotCodec(state: unknown): { codec: string | null; rest: unknown } {
+  if (!state || typeof state !== 'object') return { codec: null, rest: state };
+  const rest: Record<string, unknown> = { ...(state as Record<string, unknown>) };
+  const raw = rest.latestSnapshotCodec;
+  if (typeof raw !== 'string' || raw.length === 0) return { codec: null, rest };
+  delete rest.latestSnapshotCodec;
+  return { codec: raw, rest };
+}
+
 interface ProblemReportPayload {
   description: string;
   expected?: string;
   includeState?: boolean;
   includeLog?: boolean;
   state?: unknown;
-  log?: string[];
+  /** Recent log lines. Older clients (and the log-format v2 in-state log) may
+   *  send structured entries instead of prose strings, so accept both and
+   *  render defensively — a naive join() turns objects into "[object Object]"
+   *  and throws away the only evidence a report carries. */
+  log?: Array<string | { msg?: string; kind?: string }>;
   meta?: Record<string, unknown>;
   /** Optional auto-captured page screenshot as base64-encoded PNG (no
    *  data-URL prefix). The worker uploads it to screenshots/<sha>.png in
@@ -131,16 +163,40 @@ async function handleProblemReport(req: Request, env: Env): Promise<Response> {
     sections.push(`**Build / context**\n\n${metaLines.join('\n')}`);
   }
   if (body.includeLog && body.log?.length) {
-    const tail = body.log.slice(-40).join('\n');
+    const tail = body.log.slice(-40).map(logLineText).join('\n');
     sections.push(`**Last ${Math.min(40, body.log.length)} log lines**\n\n\`\`\`\n${tail}\n\`\`\``);
   }
   if (body.includeState && body.state) {
-    const stateJson = JSON.stringify(body.state, null, 2);
-    // GitHub issue body cap is ~65535 chars. Slice generously.
-    const truncated = stateJson.length > 50000 ? stateJson.slice(0, 50000) + '\n...(truncated)' : stateJson;
-    sections.push(`**Game state**\n\n\`\`\`json\n${truncated}\n\`\`\``);
+    // The snapshot codec is one very long base64 string; everything else in
+    // the state payload is a small summary. Slicing the combined JSON (the
+    // old behaviour) cut the codec mid-string, which broke BOTH halves — the
+    // block no longer parsed as JSON and the codec no longer decoded. Emit
+    // them as separate blocks, each with its own budget.
+    const { codec, rest } = splitSnapshotCodec(body.state);
+    const summaryJson = JSON.stringify(rest, null, 2);
+    const summary = summaryJson.length > SUMMARY_BUDGET
+      ? summaryJson.slice(0, SUMMARY_BUDGET) + '\n…(summary truncated)'
+      : summaryJson;
+    sections.push(`**Game state**\n\n\`\`\`json\n${summary}\n\`\`\``);
+    if (codec) {
+      // Whatever body budget the sections above left over goes to the codec.
+      const room = BODY_BUDGET - sections.join(SECTION_SEP).length - 300;
+      if (room < 1000) {
+        sections.push('**Snapshot codec** (`latestSnapshotCodec`, base64)\n\n(omitted — no room left in the issue body)');
+      } else if (room >= codec.length) {
+        sections.push(`**Snapshot codec** (\`latestSnapshotCodec\`, base64)\n\n\`\`\`\n${codec}\n\`\`\``);
+      } else {
+        // base64 decodes in 4-char groups — cut on a group boundary so the
+        // surviving prefix still decodes cleanly.
+        const kept = codec.slice(0, room - (room % 4));
+        sections.push(
+          `**Snapshot codec** (\`latestSnapshotCodec\`, base64)\n\n`
+          + `_Truncated: ${kept.length} of ${codec.length} chars. The prefix still decodes._\n\n`
+          + `\`\`\`\n${kept}\n\`\`\``);
+      }
+    }
   }
-  const issueBody = sections.join('\n\n---\n\n');
+  const issueBody = sections.join(SECTION_SEP);
 
   // Base labels + any caller-supplied extras (e.g. 'area:multiplayer' from
   // online play). Sanitize: strings only, deduped, length-capped.

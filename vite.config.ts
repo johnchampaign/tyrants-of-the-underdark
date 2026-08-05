@@ -142,7 +142,9 @@ function liveLogPlugin(): Plugin {
             includeState?: boolean;
             includeLog?: boolean;
             state?: unknown;
-            log?: string[];
+            // Structured log-format v2 entries or legacy prose strings — the
+            // dev path mirrors the Worker and renders both (see worker/src/index.ts).
+            log?: Array<string | { msg?: string; kind?: string }>;
             meta?: Record<string, unknown>;
             labels?: string[];
           };
@@ -160,14 +162,37 @@ function liveLogPlugin(): Plugin {
             sections.push(`**Build / context**\n\n${metaLines.join('\n')}`);
           }
           if (body.includeLog && body.log?.length) {
-            const tail = body.log.slice(-40).join('\n');
+            const tail = body.log.slice(-40)
+              .map(e => (typeof e === 'string' ? e : (e?.msg ?? e?.kind ?? JSON.stringify(e))))
+              .join('\n');
             sections.push(`**Last ${Math.min(40, body.log.length)} log lines**\n\n\`\`\`\n${tail}\n\`\`\``);
           }
           if (body.includeState && body.state) {
-            const stateJson = JSON.stringify(body.state, null, 2);
-            // GitHub issue body cap is ~65k chars. Truncate if needed.
-            const truncated = stateJson.length > 50000 ? stateJson.slice(0, 50000) + '\n...(truncated)' : stateJson;
-            sections.push(`**Game state**\n\n\`\`\`json\n${truncated}\n\`\`\``);
+            // Keep the long base64 codec out of the JSON block so a size cut
+            // can never leave behind unparseable JSON (see the Worker for the
+            // full rationale).
+            const st = body.state as Record<string, unknown>;
+            const codec = typeof st?.latestSnapshotCodec === 'string' ? st.latestSnapshotCodec : null;
+            const rest = codec ? { ...st, latestSnapshotCodec: undefined } : body.state;
+            const summaryJson = JSON.stringify(rest, null, 2);
+            const summary = summaryJson.length > 15000
+              ? summaryJson.slice(0, 15000) + '\n…(summary truncated)'
+              : summaryJson;
+            sections.push(`**Game state**\n\n\`\`\`json\n${summary}\n\`\`\``);
+            if (codec) {
+              const room = 60000 - sections.join('\n\n---\n\n').length - 300;
+              if (room < 1000) {
+                sections.push('**Snapshot codec** (`latestSnapshotCodec`, base64)\n\n(omitted — no room left in the issue body)');
+              } else if (room >= codec.length) {
+                sections.push(`**Snapshot codec** (\`latestSnapshotCodec\`, base64)\n\n\`\`\`\n${codec}\n\`\`\``);
+              } else {
+                const kept = codec.slice(0, room - (room % 4));
+                sections.push(
+                  '**Snapshot codec** (`latestSnapshotCodec`, base64)\n\n'
+                  + `_Truncated: ${kept.length} of ${codec.length} chars. The prefix still decodes._\n\n`
+                  + `\`\`\`\n${kept}\n\`\`\``);
+              }
+            }
           }
           const issueBody = sections.join('\n\n---\n\n');
 

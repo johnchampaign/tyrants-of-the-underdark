@@ -227,7 +227,11 @@ export function ProblemReportDialog({ G, ctxInfo, config, screenshotBase64, onli
           includeState,
           includeLog,
           state,
-          log: includeLog ? G.log : undefined,
+          // Render to prose HERE. G.log holds structured log-format v2 entries;
+          // posting them raw made the relay stringify objects into a wall of
+          // "[object Object]" in the issue body (#103). The relay also only
+          // ever keeps the last 40, so don't ship the whole log either.
+          log: includeLog ? G.log.slice(-40).map(logLineText) : undefined,
           meta,
           screenshot: includeScreenshot && screenshotBase64 ? screenshotBase64 : undefined,
         }),
