@@ -2011,13 +2011,20 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
             const inPickMode = !!clickableMarketSlots;
             const slotPickable = inPickMode && clickableMarketSlots!.has(i);
             const cost = lookupCard(c.deck, c.slot)?.cost ?? '?';
+            // A prompt that isn't a market pick (a Focus reveal, an end-of-turn
+            // promote, a forced discard…) still blocks recruiting: the move
+            // bounces as INVALID_MOVE and nothing happens. The hand and the
+            // aux stacks already gate on !pendingChoice; the rotating row was
+            // the one place left where "recruit" looked live but wasn't, which
+            // reads as the click having triggered the prompt.
+            const blocked = !inPickMode && !!G.pendingChoice;
             const label = inPickMode
               ? (slotPickable ? 'pick' : '—')
-              : `recruit (${cost} Inf)`;
+              : blocked ? '—' : `recruit (${cost} Inf)`;
             const onClick = inPickMode
               ? (slotPickable ? () => moves.resolveChoice(i) : undefined)
-              : (myTurn ? () => moves.recruitFromMarket(i) : undefined);
-            return <Card key={i} card={c} label={label} onClick={onClick} dim={inPickMode && !slotPickable} />;
+              : (myTurn && !blocked ? () => moves.recruitFromMarket(i) : undefined);
+            return <Card key={i} card={c} label={label} onClick={onClick} dim={(inPickMode && !slotPickable) || blocked} />;
           })}
           {/* Permanent stacks (House Guards, Priestesses of Lolth) — always
               recruitable while non-empty; once empty, greyed out and the
@@ -2568,13 +2575,16 @@ function SplitPlayView(props: {
                 const inPickMode = !!clickableMarketSlots;
                 const slotPickable = inPickMode && clickableMarketSlots!.has(i);
                 const cost = lookupCard(c.deck, c.slot)?.cost ?? '?';
+                // Blocked while any OTHER prompt is outstanding — see the game
+                // tab's market block for why.
+                const blocked = !inPickMode && !!G.pendingChoice;
                 const label = inPickMode
                   ? (slotPickable ? 'pick' : '—')
-                  : `recruit (${cost} Inf)`;
+                  : blocked ? '—' : `recruit (${cost} Inf)`;
                 const onClick = inPickMode
                   ? (slotPickable ? () => moves.resolveChoice(i) : undefined)
-                  : (myTurn ? () => moves.recruitFromMarket(i) : undefined);
-                return <Card key={i} card={c} label={label} onClick={onClick} dim={inPickMode && !slotPickable} />;
+                  : (myTurn && !blocked ? () => moves.recruitFromMarket(i) : undefined);
+                return <Card key={i} card={c} label={label} onClick={onClick} dim={(inPickMode && !slotPickable) || blocked} />;
               })}
               {(['houseGuards', 'priestesses'] as const).map(stack => {
                 const ref = stack === 'houseGuards'
