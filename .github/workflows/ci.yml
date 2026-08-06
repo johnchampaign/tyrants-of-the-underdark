@@ -43,5 +43,8 @@ jobs:
       - name: Online-path integration (serialize→store→decode; no deadlock/loop/bloat)
         run: npm run test:online-path
 
+      - name: Legacy-codec rewind (old snapshots must still load, render and score)
+        run: npm run test:legacy-codec
+
       - name: Build
         run: npx vite build

@@ -108,6 +108,26 @@ npm install
 npm run dev              # http://localhost:5173
 ```
 
+### Adding a field to `TyrantsState`
+
+Every persisted state is a base64 codec: the localStorage autosave, each entry
+in the Game Log tab's rewind list, and every `snapshots[].codec` in the public
+`logs/*.json` corpus (all of which are `schemaVersion: 1`). `loadState` wipes
+`G` and re-assigns only what the codec carried, so **a field you add today comes
+back `undefined` for every codec written before today** — and the Board reads
+plenty of state unguarded, so an unbackfilled field blanks the page on rewind.
+
+So: whenever you add a field to `TyrantsState` or `PlayerData`, add a matching
+default to **`backfillLegacyState` in `src/game.ts`**. That one function is run
+by `loadState`, `undo`, and `turn.onBegin`, and it is the only place these
+defaults should live.
+
+`npm run test:legacy-codec` is the gate. It replays every snapshot codec in
+three published logs through the real `loadState` move, server-renders the real
+`<Board>` over each result in both view modes, scores it, and finally checks
+field-for-field parity against a freshly-initialized state — so a forgotten
+backfill fails in CI instead of in front of a player.
+
 The dev build also supports the optional `npm run extract-assets` flow if you have
 the [TTS Workshop mod 881660322](https://steamcommunity.com/sharedfiles/filedetails/?id=881660322)
 installed locally — it pulls images out of the mod's cached files and writes them

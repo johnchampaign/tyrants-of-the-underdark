@@ -463,12 +463,16 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
   // Restore the most-recent saved snapshot once on mount (resume after reload).
   // Saved games are cleared by the "New game" button and when the game ends.
   const loadedRef = useRef(false);
+  // G.snapshots.length at the moment we dispatched the resume-from-save load,
+  // or null when this mount didn't restore anything. See the save effect below.
+  const restoreBaselineRef = useRef<number | null>(null);
   useEffect(() => {
     if (isOnline) return; // server is the source of truth; never restore a local save
     if (loadedRef.current) return;
     loadedRef.current = true;
     const saved = localStorage.getItem(SAVE_KEY);
     if (saved && G.snapshots.length <= 1 && !G.endGameTriggeredAtTurn) {
+      restoreBaselineRef.current = G.snapshots.length;
       try { moves.loadState(saved); } catch { /* corrupted save — ignore */ }
     }
   }, [G.snapshots.length, G.endGameTriggeredAtTurn, moves]);
@@ -481,11 +485,30 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
   // setup codec into localStorage, clobbering the real saved game. By skipping
   // the first save we preserve the existing save until the load completes; the
   // first real write happens once loadState lands and snapshots grows.
+  //
+  // That skip is NOT sufficient on its own, which is why restoreBaselineRef
+  // exists. Two things defeat it while resuming from a save:
+  //   1. React StrictMode re-runs every effect on mount (dev only), so the
+  //      "first" run is consumed by the throwaway pass and the real pass runs
+  //      with the fresh-setup G — hitting the setupPhase branch below and
+  //      DELETING the player's save outright.
+  //   2. loadState deliberately KEEPS G.snapshots (that's the rewind history),
+  //      so even after the load lands, snapshots[last] is still the fresh
+  //      mount's setup codec — writing it replaces the resumed game with a
+  //      brand-new one.
+  // Both are fixed by refusing to touch SAVE_KEY until G.snapshots has grown
+  // past its restore-time length, i.e. until a real turn boundary has captured
+  // a genuine post-restore snapshot. Until then the codec already on disk is
+  // exactly the state we're in, so leaving it alone is always correct.
   const firstSaveRef = useRef(true);
   useEffect(() => {
     if (isOnline) return; // online games persist server-side; don't touch localStorage
     if (firstSaveRef.current) { firstSaveRef.current = false; return; }
     if (ctx.gameover) { localStorage.removeItem(SAVE_KEY); return; }
+    if (restoreBaselineRef.current !== null) {
+      if (G.snapshots.length <= restoreBaselineRef.current) return;
+      restoreBaselineRef.current = null;
+    }
     if (G.snapshots.length === 0) return;
     // Don't persist during setup. bgio's play order is re-randomized on
     // page refresh (G.firstPlayerId is regenerated in setup()), so a saved

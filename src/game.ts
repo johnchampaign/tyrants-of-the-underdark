@@ -396,6 +396,99 @@ function decodeSnapshot(codec: string): Partial<TyrantsState> {
   return JSON.parse(json) as Partial<TyrantsState>;
 }
 
+/** Bring a state decoded from an OLD codec up to the CURRENT TyrantsState shape.
+ *
+ *  Every field this game has ever added to the state was added *after* some
+ *  codecs were already written — a snapshot from the Game Log tab, the
+ *  localStorage autosave, or one of the published logs/*.json corpora (all of
+ *  which are schemaVersion 1). `loadState` wipes G and re-assigns only what the
+ *  codec carried, so any newer field comes back `undefined`. The Board reads
+ *  several of them unguarded (`p.cardsPlayed.length` is the one that actually
+ *  blanked the page), and the engine reads others.
+ *
+ *  turn.onBegin used to carry an ad-hoc subset of these backfills, which was
+ *  too late to help: React re-renders the moment the load lands, long before the
+ *  next turn begins. This is the single list, called from BOTH places.
+ *
+ *  Rules for entries here: never overwrite a value the codec did carry, and
+ *  default to whatever a state from before the field existed logically implied
+ *  (empty list, rulebook starting count, null). */
+function backfillLegacyState(G: TyrantsState): void {
+  // Log first — everything below may want to append to it. v1 codecs carry a
+  // plain string[] here; ensureStructuredLog rewrites it to entries re-seq'd
+  // from 0, which can leave a legacy turnLogStart pointing past the end.
+  ensureStructuredLog(G);
+  if (typeof G.logTurn !== 'number') G.logTurn = 0;
+  if (G.logSide === undefined) G.logSide = null;
+  if (typeof G.turnLogStart !== 'number') G.turnLogStart = 0;
+  const seqEnd = nextLogSeq(G);
+  if (G.turnLogStart > seqEnd) G.turnLogStart = seqEnd;
+
+  if (!G.market) G.market = { deck: [], row: [] };
+  if (!Array.isArray(G.market.deck)) G.market.deck = [];
+  if (!Array.isArray(G.market.row)) G.market.row = [];
+  // Rulebook components p.2: 15 of each. A state from before the recruit-stacks
+  // feature can't have spent any, so the full stack is the right restore.
+  if (!G.auxStacks) G.auxStacks = { houseGuards: 15, priestesses: 15 };
+  if (typeof G.auxStacks.houseGuards !== 'number') G.auxStacks.houseGuards = 15;
+  if (typeof G.auxStacks.priestesses !== 'number') G.auxStacks.priestesses = 15;
+
+  if (G.pendingChoice === undefined) G.pendingChoice = null;
+  if (G.pausedHandlerState === undefined) G.pausedHandlerState = null;
+  if (!G.troops) G.troops = {};
+  if (!G.spies) G.spies = {};
+  if (!G.siteControl) G.siteControl = {};
+  if (!G.controlMarkers) G.controlMarkers = {};
+  if (typeof G.setupPhase !== 'boolean') G.setupPhase = false;
+  if (!G.turnAspectsPlayed) G.turnAspectsPlayed = {};
+  if (!Array.isArray(G.cardsPlayedThisTurn)) G.cardsPlayedThisTurn = [];
+  if (!Array.isArray(G.markerInfluenceGrantedThisTurn)) G.markerInfluenceGrantedThisTurn = [];
+  if (!Array.isArray(G.markerTcGrantedThisTurn)) G.markerTcGrantedThisTurn = [];
+  if (!Array.isArray(G.pendingEotPromotions)) G.pendingEotPromotions = [];
+  if (!Array.isArray(G.pendingEotInnerCircleVp)) G.pendingEotInnerCircleVp = [];
+  if (!Array.isArray(G.devouredPile)) G.devouredPile = [];
+  if (G.activeTurnColor === undefined) G.activeTurnColor = null;
+  if (G.endGameTriggeredAtTurn === undefined) G.endGameTriggeredAtTurn = null;
+  if (typeof G.firstPlayerId !== 'string') G.firstPlayerId = '0';
+  // These bound the map render. Deriving them from siteControl (which every
+  // state has had since the map existed) beats defaulting to [], which would
+  // render an empty board.
+  if (!Array.isArray(G.activeSites) || G.activeSites.length === 0) {
+    G.activeSites = SITES.filter(s => s.id in G.siteControl).map(s => s.id);
+  }
+  if (!Array.isArray(G.activeSections) || G.activeSections.length === 0) {
+    const active = new Set(G.activeSites);
+    G.activeSections = [...new Set(SITES.filter(s => active.has(s.id)).map(s => s.section))];
+  }
+  // snapshots / turnLogs / undoStack are normally supplied by the caller (they
+  // are peeled from every codec), but never leave them undefined — turn.onBegin
+  // pushes onto snapshots and pushUndoSnapshot onto undoStack.
+  if (!Array.isArray(G.snapshots)) G.snapshots = [];
+  if (!Array.isArray(G.turnLogs)) G.turnLogs = [];
+  if (!Array.isArray(G.undoStack)) G.undoStack = [];
+
+  if (!G.players) G.players = {};
+  for (const pid of Object.keys(G.players)) {
+    const p = G.players[pid];
+    if (!p) continue;
+    if (!Array.isArray(p.deck)) p.deck = [];
+    if (!Array.isArray(p.hand)) p.hand = [];
+    if (!Array.isArray(p.discard)) p.discard = [];
+    if (!Array.isArray(p.innerCircle)) p.innerCircle = [];
+    // Added with the per-player "Played this turn" pile viewer. Absent from
+    // every v1 codec, and read unguarded in two places in the Board — this is
+    // the field whose `undefined.length` blanked the page on rewind.
+    if (!Array.isArray(p.cardsPlayed)) p.cardsPlayed = [];
+    if (!p.trophyHall) p.trophyHall = {};
+    if (typeof p.barracksLeft !== 'number') p.barracksLeft = 40;
+    if (typeof p.power !== 'number') p.power = 0;
+    if (typeof p.influence !== 'number') p.influence = 0;
+    if (typeof p.vp !== 'number') p.vp = 0;
+    // Derives the remaining supply from spies already on the board.
+    ensureSpiesLeftInitialized(G, p.color);
+  }
+}
+
 /** Hard cap on retained undo points per turn (well above the per-turn move
  *  ceiling; just a runaway-memory backstop). */
 const MAX_UNDO_DEPTH = 100;
@@ -572,9 +665,10 @@ export const TyrantsGame: Game<TyrantsState> = {
       next: ({ ctx }) => (ctx.playOrderPos + 1) % ctx.numPlayers,
     },
     onBegin: ({ G, ctx }) => {
-      // Legacy saves (and old online snapshots not yet migrated) carry a
-      // string[] log — upgrade before anything reads/writes entries.
-      ensureStructuredLog(G);
+      // Legacy saves and old online snapshots not yet migrated carry a
+      // string[] log plus none of the fields added since they were written.
+      // One shared list, also run by loadState/undo — see backfillLegacyState.
+      backfillLegacyState(G);
       G.logTurn = ctx.turn;
       G.logSide = ctx.currentPlayer;
       // Mark where this turn's log entries begin (by seq) so onEnd can slice them out.
@@ -587,28 +681,12 @@ export const TyrantsGame: Game<TyrantsState> = {
       // Undo history is per-turn — you can't undo back into a prior player's turn.
       G.undoStack = [];
       G.activeTurnColor = G.players[ctx.currentPlayer].color;
-      // Backfill spiesLeft for every player whose state predates the spy-
-      // supply field (legacy saves). Safe to call every turn — idempotent
-      // once the field is a real number. Also covers AI players that the
-      // place-spy handlers might never touch directly.
-      for (const pid of Object.keys(G.players)) {
-        ensureSpiesLeftInitialized(G, G.players[pid].color);
-      }
-      // Backfill auxStacks for legacy saves (added with the recruit-stacks
-      // feature). Idempotent once the field exists. Setting to the rulebook
-      // values assumes nobody recruited from these stacks in the saved
-      // game, which is true for any state from before this commit.
-      if (!G.auxStacks) {
-        G.auxStacks = { houseGuards: 15, priestesses: 15 };
-      }
-      // Reset the per-turn marker-influence ledger so the current player can
-      // claim the bonus once per marker this turn, either from markers they
-      // already hold (below) or from markers they take control of during the
-      // turn (granted live by Mechanics.claimMarkerInfluenceIfControlled).
+      // Reset the per-turn marker ledgers so the current player can claim each
+      // bonus once this turn, either from markers they already hold (below) or
+      // from markers they take control of during the turn (granted live by
+      // Mechanics.claimMarkerInfluenceIfControlled).
       G.markerInfluenceGrantedThisTurn = [];
-      // Backfill on legacy saves loaded before this field existed.
       G.markerTcGrantedThisTurn = [];
-      if (!G.devouredPile) G.devouredPile = [];
 
       // Per-turn marker effect for chits the active player held coming into
       // this turn. Pays both the influence (cobweb) and any VP printed on
@@ -1103,8 +1181,12 @@ export const TyrantsGame: Game<TyrantsState> = {
       // The decoded codec never carries an undo stack (peeled on encode), and
       // loading a saved/rewound state starts a fresh undo history.
       G.undoStack = [];
-      // The pasted codec may predate the structured log (string[]).
-      ensureStructuredLog(G);
+      // The pasted codec may predate the structured log (string[]) and any
+      // state field added since it was written — restore the current shape
+      // BEFORE anything (the log append below, or the very next React render)
+      // reads it. Without this the Board throws on the first unguarded newer
+      // field and takes the whole page down.
+      backfillLegacyState(G);
       logEvent(G, '[state loaded from codec]', { kind: 'system', side: null });
     },
 
@@ -1138,6 +1220,10 @@ export const TyrantsGame: Game<TyrantsState> = {
       G.snapshots = keep.snapshots;
       G.turnLogs = keep.turnLogs;
       G.undoStack = remaining;
+      // Undo entries are encoded from the live (already-backfilled) G, so this
+      // is a no-op in practice — but the stack can outlive a mid-session
+      // loadState, so keep the same guarantee on both restore paths.
+      backfillLegacyState(G);
       Mechanics.log(G, 'Undo');
     },
 
