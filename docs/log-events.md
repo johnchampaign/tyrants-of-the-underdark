@@ -33,6 +33,7 @@ The renderer (`logLineText`) tolerates plain strings just in case.
 | `card.recruit` | `{ card: string, from: 'market' \| 'houseGuards' \| 'priestesses' \| 'devoured-pile' }` | |
 | `card.promote` | `{ card: string, source?: string }` | to inner circle |
 | `card.devour` | `{ card: string, from?: 'hand' \| 'inner-circle' }` | |
+| `card.focus` | `{ aspect: string, via: 'chain' \| 'revealed' \| 'none' \| 'declined', card: string, enabledBy?: string[], revealed?: string }` | outcome of a Focus keyword. `chain` fires with no prompt (another card of that aspect was already played — `enabledBy` names them); `none`/`declined` are explanatory notes, not triggers |
 | `power.gain` | `{ amount: number, source?: string, site?: string }` | source e.g. `'Beholder'`, `'Banshee'` |
 | `influence.gain` | `{ amount: number, source?: string }` | |
 | `vp.gain` | `{ amount: number, source?: string }` | |

@@ -11,6 +11,7 @@ import { SlotCalibration } from './components/SlotCalibration';
 import { SectionDividerCalibration } from './components/SectionDividerCalibration';
 import { MarkerCalibration } from './components/MarkerCalibration';
 import { GameLog } from './components/GameLog';
+import { GameTabLog } from './components/GameTabLog';
 import { CardLogText } from './components/CardLogText';
 import { CardTextVerify } from './components/CardTextVerify';
 import { RouteVerify } from './components/RouteVerify';
@@ -2063,27 +2064,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
           })}
         </div>
 
-        <details style={{ marginTop: 24 }}>
-          <summary style={{ cursor: 'pointer', opacity: 0.7 }}>Log ({G.log.length})</summary>
-          {/* Full log, newest first, in a scrollable + wrapping panel. The old
-              <pre> showed only the last 20 lines and, being preformatted, ran
-              long lines off-screen with no scroll — so most of the game was
-              unviewable here. */}
-          <div style={{
-            marginTop: 6, fontSize: 12, opacity: 0.85,
-            maxHeight: '40vh', overflowY: 'auto',
-            background: '#0c0814', borderRadius: 4, padding: '6px 8px',
-          }}>
-            {G.log.length === 0
-              ? <div style={{ opacity: 0.5 }}>(no log entries yet)</div>
-              : G.log.slice().reverse().map((entry, i) => (
-                <div key={i} style={{ padding: '1px 0', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                  {/* Legacy saves may still hold plain strings — logLineText handles both. */}
-                  <CardLogText line={logLineText(entry)} />
-                </div>
-              ))}
-          </div>
-        </details>
+        <GameTabLog log={G.log} />
       </>}
     </div>
   );

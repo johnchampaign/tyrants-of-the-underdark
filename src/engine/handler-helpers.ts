@@ -1030,6 +1030,21 @@ export function sequence(...steps: EffectHandler[]): EffectHandler {
 
 interface FocusState { revealChecked?: boolean; childState?: unknown }
 
+/** Names of the OTHER same-aspect cards played this turn — i.e. what actually
+ *  satisfied a chain trigger. The card being resolved is already in
+ *  cardsPlayedThisTurn whenever its handler suspended on an earlier step (see
+ *  playCard), so drop one instance of it before counting. */
+function focusEnablers(ctx: EffectContext, key: string): string[] {
+  const names: string[] = [];
+  let droppedSelf = false;
+  for (const c of ctx.G.cardsPlayedThisTurn) {
+    if (!droppedSelf && c.deck === ctx.card.deck && c.slot === ctx.card.slot) { droppedSelf = true; continue; }
+    const d = lookupCard(c.deck, c.slot);
+    if (d?.aspect.toLowerCase() === key) names.push(d.name);
+  }
+  return names;
+}
+
 export function focus(aspect: string, bonus: EffectHandler): EffectHandler {
   const key = aspect.toLowerCase();
   return ctx => {
@@ -1038,7 +1053,19 @@ export function focus(aspect: string, bonus: EffectHandler): EffectHandler {
 
     // Auto-trigger: another same-aspect card was already played this turn.
     if (count > 1) {
-      if (!state.revealChecked) Mechanics.log(ctx.G, `Focus (${aspect}) triggered (chain).`);
+      if (!state.revealChecked) {
+        // Name the earlier card(s) that satisfied the trigger. A chain Focus
+        // fires with no prompt at all, so without this the log line is the only
+        // evidence it happened — and "Focus triggered" on its own reads as
+        // having come out of nowhere (in-game report #103, where the trigger
+        // was correct but looked like it was caused by an unrelated recruit).
+        const enablers = focusEnablers(ctx, key);
+        const because = enablers.length
+          ? `already played ${enablers.join(', ')} this turn`
+          : `played ${count} ${aspect} cards this turn`;
+        Mechanics.log(ctx.G, `Focus (${aspect}) triggered — ${because}, so no reveal was needed.`,
+          { kind: 'card.focus', payload: { aspect, via: 'chain', card: ctx.card.name, enabledBy: enablers } });
+      }
       const childCtx: EffectContext = { ...ctx, pendingChoice: ctx.pendingChoice, handlerState: state.childState, paused: ctx.paused };
       const done = bonus(childCtx);
       if (!done) {
@@ -1059,7 +1086,15 @@ export function focus(aspect: string, bonus: EffectHandler): EffectHandler {
           const d = lookupCard(me.hand[i].deck, me.hand[i].slot);
           if (d?.aspect.toLowerCase() === key) eligible.push(i);
         }
-        if (eligible.length === 0) { ctx.handlerState = null; return true; } // no eligible reveal
+        if (eligible.length === 0) {
+          // No prompt, no effect, and previously no log line either — the card
+          // just silently did less than its text promised (in-game report #100).
+          // Say why.
+          Mechanics.log(ctx.G, `Focus (${aspect}) did not apply — no other ${aspect} card played this turn and none in hand to reveal.`,
+            { kind: 'card.focus', payload: { aspect, via: 'none', card: ctx.card.name } });
+          ctx.handlerState = null;
+          return true;
+        }
         ctx.pendingChoice = {
           kind: 'select-card-in-hand',
           prompt: `Reveal a ${aspect} card from hand for the Focus bonus?`,
@@ -1072,8 +1107,16 @@ export function focus(aspect: string, bonus: EffectHandler): EffectHandler {
       const idx = ctx.pendingChoice.response as number | null;
       ctx.pendingChoice = null;
       ctx.paused = false;
-      if (idx == null) { ctx.handlerState = null; return true; } // declined
-      Mechanics.log(ctx.G, `Focus (${aspect}) triggered (revealed).`);
+      if (idx == null) {
+        Mechanics.log(ctx.G, `Focus (${aspect}) declined — no card revealed.`,
+          { kind: 'card.focus', payload: { aspect, via: 'declined', card: ctx.card.name } });
+        ctx.handlerState = null;
+        return true; // declined
+      }
+      const revealed = ctx.G.players[ctx.actorId].hand[idx];
+      const revealedName = revealed ? (lookupCard(revealed.deck, revealed.slot)?.name ?? revealed.name) : aspect;
+      Mechanics.log(ctx.G, `Focus (${aspect}) triggered — revealed ${revealedName} from hand (it stays in your hand).`,
+        { kind: 'card.focus', payload: { aspect, via: 'revealed', card: ctx.card.name, revealed: revealedName } });
       state = { revealChecked: true, childState: null };
     }
 
