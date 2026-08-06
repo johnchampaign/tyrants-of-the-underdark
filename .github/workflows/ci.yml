@@ -46,5 +46,8 @@ jobs:
       - name: Legacy-codec rewind (old snapshots must still load, render and score)
         run: npm run test:legacy-codec
 
+      - name: Regression suite (every standalone scripts/test-*.ts)
+        run: npm run test:suite
+
       - name: Build
         run: npx vite build

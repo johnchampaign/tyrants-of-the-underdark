@@ -34,9 +34,11 @@ finds a bug that would wedge a live game:
 npm run ship
 ```
 
-That is exactly `npm run test:ai-drive && npm run build && npx wrangler pages
-deploy dist --project-name tyrants-online --branch main`. If you ever need the
-raw steps:
+That runs every gate in `npm run ci` except the typecheck (AI-drive sweep,
+online-path integration, legacy-codec rewind, and the standalone regression
+suite), then `npm run build` and `npx wrangler pages deploy dist
+--project-name tyrants-online --branch main`. See the `ship` script in
+`package.json` for the exact chain. If you ever need the raw steps:
 
 ```sh
 npm run build
@@ -107,6 +109,27 @@ only the visuals change.
 npm install
 npm run dev              # http://localhost:5173
 ```
+
+### Tests
+
+```bash
+npm run ci               # typecheck + every gate below
+npm run test:suite       # just the standalone scripts/test-*.ts regressions (~30s)
+```
+
+`scripts/` holds one focused regression script per past bug. `npm run test:suite`
+**discovers them** (`scripts/test-*.ts` and `verify-*.ts`) rather than reading a
+hand-maintained list, so a new one is covered the moment you add it — nothing to
+remember in `package.json`. The few exclusions, each with its reason, live in the
+`SKIP` map at the top of `scripts/run-suite.mjs`; those are the heavyweight gates
+that already have their own CI step (`test:ai-drive`, `test:online-path`,
+`test:legacy-codec`).
+
+The discovery is deliberate. These scripts used to be invoked only by hand, and
+`test-promote-discard.ts` sat broken for months after the log-format v2 migration
+— it still asserted against `G.log` as `string[]` and died on
+`l.includes is not a function` instead of reporting a failure. Nothing noticed,
+because nothing ran it.
 
 ### Adding a field to `TyrantsState`
 
