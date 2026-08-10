@@ -23,10 +23,11 @@
     "test:ai-drive": "vite-node scripts/test-ai-drive.ts",
     "test:online-path": "vite-node scripts/test-online-path.ts",
     "test:repro-102": "vite-node scripts/test-repro-102.ts",
-    "ci": "tsc --noEmit && npm run test:ai-drive && npm run test:online-path && npm run test:repro-102 && npm run test:repro-103",
-    "ship": "npm run test:ai-drive && npm run test:online-path && npm run test:repro-102 && npm run test:repro-103 && npm run build && npx wrangler pages deploy dist --project-name tyrants-online --branch main",
+    "ci": "tsc --noEmit && npm run test:ai-drive && npm run test:online-path && npm run test:repro-102 && npm run test:repro-103 && npm run test:repro-104",
+    "ship": "npm run test:ai-drive && npm run test:online-path && npm run test:repro-102 && npm run test:repro-103 && npm run test:repro-104 && npm run build && npx wrangler pages deploy dist --project-name tyrants-online --branch main",
     "test:repro-103": "vite-node scripts/test-repro-103.ts",
-    "fuzz:focus": "vite-node scripts/fuzz-focus-103.ts"
+    "fuzz:focus": "vite-node scripts/fuzz-focus-103.ts",
+    "test:repro-104": "vite-node scripts/test-repro-104.ts"
   },
   "keywords": [],
   "author": "",

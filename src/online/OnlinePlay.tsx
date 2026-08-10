@@ -67,7 +67,15 @@ export function OnlinePlay({ gameId, token }: { gameId: string; token: string })
   );
   const messagingClient = useMemo(() => makeMessagingClient(gameId, token), [gameId, token]);
   const { view, yourTurn, gameOver, you, ranked, submit, loading, error } =
-    useGame<BgioState, TyrantsAction>(client, { pollMs: 2000, trackLegalActions: false });
+    useGame<BgioState, TyrantsAction>(client, {
+      pollMs: 2000,
+      trackLegalActions: false,
+      // Match the submit budget. A poll isn't always a cheap read: if the AI
+      // seat is mid-turn the server finishes that turn before answering, and
+      // the default 20s backstop cut it off every time — the turn never
+      // persisted and the board stayed frozen forever (#104).
+      fetchTimeoutMs: 60_000,
+    });
 
   useEffect(() => {
     if (you != null) rememberOpenedGame(gameId, you as PlayerId, token);

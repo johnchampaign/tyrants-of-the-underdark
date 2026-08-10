@@ -76,10 +76,27 @@ export interface BgioState {
 
 type AnyReducer = (s: BgioState, action: unknown) => BgioState;
 
+// ONLINE ONLY: turn off boardgame.io's built-in undo bookkeeping.
+//
+// bgio stores a FULL copy of `G` (plus ctx + plugins) in `state._undo` on every
+// dispatched move, and only clears it at a turn boundary. On a Tyrants turn
+// that's ~10 moves × ~95 KB, so the state the server clones and re-clones grows
+// from ~0.3 MB to ~1.3 MB *within a single turn*, and every later move in that
+// turn pays to copy all of it. That cost compounds as a game gets longer; when a
+// server-side AI turn stops fitting in the request budget, nothing persists and
+// the seat is stranded — the human sees a board with no buttons (#104).
+//
+// Nothing online can undo: `undo`/`redo` are excluded from the action vocabulary
+// (see TyrantsAction), OnlinePlay stubs the bgio undo/redo props, and the game's
+// OWN rewind (`G.undoStack` + the `undo` move) is a hotseat-only affordance that
+// this flag does not touch. Hotseat builds its own bgio Client from TyrantsGame
+// and is unaffected — we spread into a copy so TyrantsGame itself is untouched.
+const ONLINE_GAME = { ...TyrantsGame, disableUndo: true };
+
 let _reducer: AnyReducer | null = null;
 function reducer(): AnyReducer {
   if (!_reducer) {
-    _reducer = CreateGameReducer({ game: TyrantsGame }) as unknown as AnyReducer;
+    _reducer = CreateGameReducer({ game: ONLINE_GAME }) as unknown as AnyReducer;
   }
   return _reducer;
 }
@@ -92,11 +109,11 @@ export function initialBgioState(
 ): BgioState {
   const wrapped = setupData
     ? {
-        ...TyrantsGame,
+        ...ONLINE_GAME,
         setup: (sa: Parameters<NonNullable<typeof TyrantsGame.setup>>[0]) =>
           TyrantsGame.setup!(sa, setupData),
       }
-    : TyrantsGame;
+    : ONLINE_GAME;
   return InitializeGame({ game: wrapped, numPlayers }) as unknown as BgioState;
 }
 

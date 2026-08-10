@@ -67,9 +67,14 @@ async function apiJson(
   // long enough to ride out a deploy or cold-start window. Writes get the
   // single cautious HTML retry only.
   const backoff = opts.idempotent ? [400, 500, 700, 1000] : [800];
-  // Reads are cheap and re-polled anyway; writes may legitimately take a while
-  // (a submit runs the whole AI turn server-side before responding).
-  const timeoutMs = opts.idempotent ? 20_000 : 60_000;
+  // A state read is NOT always cheap: fetching a game whose AI seat is mid-turn
+  // makes the server finish that turn before answering — the exact work the
+  // 60s write budget was sized for. Giving the read a shorter deadline meant a
+  // slow AI turn was aborted client-side, which kills the Function mid-run, so
+  // nothing persisted and the next poll started over: a stall that could never
+  // resolve itself, with a frozen board and no button to press (#104). Reads
+  // now get the same budget as writes.
+  const timeoutMs = 60_000;
   let lastErr: Error | null = null;
 
   for (let attempt = 0; attempt <= backoff.length; attempt++) {
@@ -89,7 +94,12 @@ async function apiJson(
       lastErr = new Error(timedOut
         ? 'The server is taking too long to respond. Reconnecting…'
         : 'Lost connection to the server. Reconnecting…');
-      if (opts.idempotent && attempt < backoff.length) { await delay(backoff[attempt]); continue; }
+      // A blown DEADLINE is not a blip to ride out: the server was still working
+      // when we gave up, and an immediate retry just starts a second copy of
+      // that work competing with the first. The poll loop is the retry — let it
+      // come back in a couple of seconds instead. Ordinary network failures
+      // (nothing running server-side) still use the ladder.
+      if (opts.idempotent && !timedOut && attempt < backoff.length) { await delay(backoff[attempt]); continue; }
       throw lastErr;
     } finally {
       t.clear();
@@ -217,8 +227,26 @@ export function makeClient(
 ): GameClientApi<BgioState, TyrantsAction> {
   const base = `/api/games/${gameId}`;
   const q = `?as=${encodeURIComponent(token)}`;
+  // COALESCE overlapping state reads. useGame polls on a fixed 2s interval with
+  // no in-flight guard, so a fetch that takes longer than the interval (a poll
+  // that has to finish a stranded AI turn server-side) stacks up: within 20s a
+  // dozen requests are all running the same expensive turn and racing to write
+  // the same snapshot, which makes a slow turn slower and can never converge
+  // (#104). A state read has no side effect from the caller's point of view, so
+  // handing every overlapping caller the same in-flight promise is exact —
+  // they'd each have asked for the same thing.
+  let inFlight: Promise<any> | null = null;
+  const fetchState = (): Promise<any> => {
+    if (inFlight) return inFlight;
+    const shared: Promise<any> = apiJson(
+      (signal) => fetch(`${base}${q}`, { signal }),
+      { idempotent: true },
+    ).finally(() => { if (inFlight === shared) inFlight = null; });
+    inFlight = shared;
+    return shared;
+  };
   return {
-    fetch: () => apiJson((signal) => fetch(`${base}${q}`, { signal }), { idempotent: true }),
+    fetch: fetchState,
     submit: (action) =>
       apiJson((signal) => fetch(`${base}/submit${q}`, {
         method: 'POST',
