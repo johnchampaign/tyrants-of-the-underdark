@@ -87,7 +87,7 @@ registerAll({
   'enchanter-of-thay':    chooseOne(
                             { label: 'Place a spy', handler: placeSpyAtChosenSite() },
                             { label: 'Return a spy → +4 Power', handler: sequence(returnOwnSpyChoice(), grant({ power: 4 })), available: playerHasOwnSpy }),
-  'green-wyrmling':       sequence(placeSpyAtChosenSite(), ifAnotherPlayerTroopAtLastPlacedSpySite(grant({ influence: 2 }))),
+  'green-wyrmling':       sequence(placeSpyAtChosenSite({ followUp: 'opponent-troop' }), ifAnotherPlayerTroopAtLastPlacedSpySite(grant({ influence: 2 }))),
   'watcher-of-thay':      chooseOne(
                             { label: 'Place a spy', handler: placeSpyAtChosenSite() },
                             { label: 'Return a spy → +3 Influence', handler: sequence(returnOwnSpyChoice(), grant({ influence: 3 })), available: playerHasOwnSpy }),
@@ -138,7 +138,7 @@ registerAll({
   'blue-dragon':          sequence(flagEotPromote({ count: 2, optional: true }),
                                    flagEotInnerCircleVp(3)),
   'green-dragon':         chooseOne(
-                            { label: 'Place a spy + supplant a troop at that site', handler: sequence(placeSpyAtChosenSite(), supplantAtLastPlacedSpySite()) },
+                            { label: 'Place a spy + supplant a troop at that site', handler: sequence(placeSpyAtChosenSite({ followUp: 'supplant' }), supplantAtLastPlacedSpySite()) },
                             { label: 'Return a spy + supplant a troop at that site + 1 VP per control marker held', handler: sequence(returnOwnSpyChoice(), supplantAtLastReturnedSpySite(), grantVpPerControlMarkerHeld), available: playerHasOwnSpy }),
   // Red Dragon: "Supplant a troop. Return an enemy spy. +1 VP per
   // total-controlled site." Previously this returned the player's OWN

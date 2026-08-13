@@ -90,7 +90,40 @@ export function ensureSpiesLeftInitialized(G: import('../game').TyrantsState, co
   me.spiesLeft = Math.max(0, 5 - onBoard);
 }
 
-export function placeSpyAtChosenSite(opts?: { optional?: boolean }): EffectHandler {
+/** What the card does at the spy's site *after* the spy lands. Several cards
+ *  chain off `_lastPlacedSpySite`, and every one of them quietly does nothing
+ *  if the chosen site holds no qualifying troop. Declaring the follow-up lets
+ *  the place-a-spy prompt say so up front and flag the sites that pay off
+ *  (#105: "Yan-C-Bin did not assassinate a troop" — the reporter had spent the
+ *  spy on a site holding only their own troop, which is never a legal target). */
+export type SpyFollowUp = 'assassinate' | 'supplant' | 'enemy-troop' | 'opponent-troop';
+
+const SPY_FOLLOW_UP_TEXT: Record<SpyFollowUp, string> = {
+  assassinate:    'you then assassinate a troop there',
+  supplant:       'you then supplant a troop there',
+  'enemy-troop':  'the bonus needs an enemy troop there',
+  'opponent-troop': "the bonus needs another player's troop there",
+};
+
+/** Does `siteId` hold a troop that satisfies `followUp`? Mirrors the
+ *  eligibility filters in assassinateAtLastPlacedSpySite /
+ *  supplantAtLastPlacedSpySite / ifEnemyTroopAtLastPlacedSpySite /
+ *  ifAnotherPlayerTroopAtLastPlacedSpySite — keep them in step. */
+function siteSatisfiesFollowUp(
+  G: import('../game').TyrantsState, myColor: string, siteId: string, followUp: SpyFollowUp,
+): boolean {
+  return TROOP_SPACES.some(t => {
+    if (t.parentSite !== siteId) return false;
+    const occ = G.troops[t.id];
+    if (!occ || occ === myColor) return false;
+    // "another player" excludes unaligned white troops; the rest treat white
+    // as a legal target (rulebook p.11).
+    if (followUp === 'opponent-troop') return occ !== 'white';
+    return true;
+  });
+}
+
+export function placeSpyAtChosenSite(opts?: { optional?: boolean; followUp?: SpyFollowUp }): EffectHandler {
   return ctx => {
     const me = ctx.G.players[ctx.actorId];
     const myColor = me.color;
@@ -103,6 +136,23 @@ export function placeSpyAtChosenSite(opts?: { optional?: boolean }): EffectHandl
     const placeableSites = () => SITES
       .filter(s => s.id in ctx.G.siteControl && !(ctx.G.spies[s.id] ?? []).includes(myColor))
       .map(s => s.id);
+
+    // Helper: build the prompt (+ advisory highlight) for a place-site pick.
+    // With no declared follow-up this is the plain question it always was.
+    const placePrompt = (base: string): PendingChoice => {
+      if (!opts?.followUp) return { kind: 'select-site', prompt: base, options: placeableSites() } as PendingChoice;
+      const options = placeableSites();
+      const highlight = options.filter(id => siteSatisfiesFollowUp(ctx.G, myColor, id, opts.followUp!));
+      const tail = highlight.length > 0
+        ? `${SPY_FOLLOW_UP_TEXT[opts.followUp]} — ${highlight.length} site${highlight.length === 1 ? '' : 's'} marked below can pay off.`
+        : `${SPY_FOLLOW_UP_TEXT[opts.followUp]}, and no site on the board currently has one.`;
+      return {
+        kind: 'select-site',
+        prompt: `${base.replace(/\?$/, '')} — ${tail}`,
+        options,
+        highlight,
+      } as PendingChoice;
+    };
     // Helper: sites where I currently have a spy (eligible to return).
     const ownSpySites = () => SITES
       .filter(s => (ctx.G.spies[s.id] ?? []).includes(myColor))
@@ -112,12 +162,7 @@ export function placeSpyAtChosenSite(opts?: { optional?: boolean }): EffectHandl
     if (state.phase === 'init') {
       if (me.spiesLeft > 0) {
         // Normal path: prompt for the site to place at.
-        ctx.pendingChoice = {
-          kind: 'select-site',
-          prompt: 'Place a spy at which site?',
-          options: placeableSites(),
-          optional: opts?.optional,
-        } as PendingChoice;
+        ctx.pendingChoice = { ...placePrompt('Place a spy at which site?'), optional: opts?.optional } as PendingChoice;
         ctx.paused = true;
         ctx.handlerState = { phase: 'place' };
         return false;
@@ -192,11 +237,7 @@ export function placeSpyAtChosenSite(opts?: { optional?: boolean }): EffectHandl
         me.spiesLeft += 1;
         Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} returned spy from ${siteId} to refill supply (spies left: ${me.spiesLeft})`);
       }
-      ctx.pendingChoice = {
-        kind: 'select-site',
-        prompt: 'Place the spy at which site?',
-        options: placeableSites(),
-      } as PendingChoice;
+      ctx.pendingChoice = placePrompt('Place the spy at which site?');
       ctx.paused = true;
       ctx.handlerState = { phase: 'empty-place' };
       return false;
@@ -240,7 +281,10 @@ export function supplantAtLastPlacedSpySite(): EffectHandler {
           const occ = ctx.G.troops[id];
           return occ && occ !== me.color;
         });
-      if (eligible.length === 0) return true;
+      if (eligible.length === 0) {
+        Mechanics.log(ctx.G, `(supplant at ${siteId}: skipped — only your own troops are there, and you can't supplant your own troops)`);
+        return true;
+      }
       ctx.pendingChoice = {
         kind: 'select-troop-space',
         prompt: `Supplant a troop at ${siteId} (the spy's site).`,
@@ -298,7 +342,7 @@ export function assassinateAtLastPlacedSpySite(): EffectHandler {
           return occ && occ !== me.color;
         });
       if (eligible.length === 0) {
-        Mechanics.log(ctx.G, `(assassinate at ${siteId}: no enemy/white troops to target — skipped)`);
+        Mechanics.log(ctx.G, `(assassinate at ${siteId}: skipped — only your own troops are there, and you can't assassinate your own troops)`);
         Gx._lastPlacedSpySite = undefined;
         ctx.handlerState = null;
         return true;

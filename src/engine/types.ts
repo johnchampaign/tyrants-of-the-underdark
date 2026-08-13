@@ -44,6 +44,14 @@ export interface PendingChoice {
    *  AI / UI distinguish e.g. an Insane Outcast's "discard to return" prompt
    *  from a Succubus / Marilith "devour from hand" prompt. */
   cardKey?: string;
+  /** Subset of `options` that the UI should mark as *the ones that pay off*.
+   *  Purely advisory — every entry in `options` stays legal and clickable.
+   *  Used by place-a-spy prompts whose card does something else at that same
+   *  site afterwards (Yan-C-Bin assassinates there, Green Dragon supplants
+   *  there, Infiltrator wants an opponent troop there): without it the player
+   *  can spend the spy on a site where the follow-up has no legal target and
+   *  only find out from a parenthetical log line. Reported as #105. */
+  highlight?: string[];
 }
 
 export interface EffectContext {

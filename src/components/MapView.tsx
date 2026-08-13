@@ -65,6 +65,12 @@ interface MapViewProps {
   /** Sites the user can click in the current context (e.g. empty starting sites during setup). */
   clickableSites?: Set<string>;
   onSiteClick?: (siteId: string) => void;
+  /** Advisory subset of clickableSites: sites where the card's follow-up step
+   *  (assassinate / supplant / "opponent troop here" bonus) actually has a
+   *  target. Drawn as a solid, brighter ring; everything in clickableSites
+   *  stays equally clickable. Report #105 — a spy spent on a site with no
+   *  legal follow-up target used to look identical to a good one. */
+  highlightSites?: Set<string>;
   /** Troop spaces the user can click (e.g. for assassinate/deploy/supplant prompts). */
   clickableSpaces?: Set<string>;
   onSpaceClick?: (spaceId: string) => void;
@@ -181,7 +187,7 @@ function ControlMarkerToken(
   );
 }
 
-export function MapView({ calibrate = false, editRoutes = false, G, clickableSites, onSiteClick, clickableSpaces, onSpaceClick }: MapViewProps) {
+export function MapView({ calibrate = false, editRoutes = false, G, clickableSites, onSiteClick, highlightSites, clickableSpaces, onSpaceClick }: MapViewProps) {
   const boardUrl = useCachedImage('assets/board/map.jpg');
   const [overrides, setOverrides] = useState<PositionOverride>(loadOverrides);
   const [slotPositions] = useState<SlotPositions>(loadSlotPositions);
@@ -326,6 +332,9 @@ export function MapView({ calibrate = false, editRoutes = false, G, clickableSit
           {G && SITES.filter(s => isSiteActive(s.id)).map(s => {
             const p = pos(s);
             const isClickable = !!clickableSites?.has(s.id);
+            // #105: schematic mode has no ring overlay, so the follow-up
+            // highlight rides on the site card's own border instead.
+            const isHighlit = isClickable && !!highlightSites?.has(s.id);
             const controller = G.siteControl[s.id] ?? null;
             const spaces = sitesSpaces(s.id);
             return (
@@ -335,18 +344,21 @@ export function MapView({ calibrate = false, editRoutes = false, G, clickableSit
                 padding: '4px 8px',
                 background: 'rgba(20, 14, 40, 0.92)',
                 color: '#e6e1f2',
-                border: isClickable ? '2px solid #ffcc44'
+                border: isHighlit ? '3px solid #66ff9e'
+                  : isClickable ? '2px solid #ffcc44'
                   : controller ? `2px solid ${COLOR_HEX[controller]}`
                   : s.isStartingSite ? '1px solid #ffcc44'
                   : '1px solid #5a3380',
                 borderRadius: 8,
-                boxShadow: isClickable ? '0 0 10px #ffcc44' : undefined,
+                boxShadow: isHighlit ? '0 0 14px rgba(102, 255, 158, 0.9)'
+                  : isClickable ? '0 0 10px #ffcc44' : undefined,
                 cursor: isClickable ? 'pointer' : 'default',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
                 whiteSpace: 'nowrap',
                 zIndex: 5,
               }}
-                onClick={() => { if (isClickable) onSiteClick?.(s.id); }}>
+                onClick={() => { if (isClickable) onSiteClick?.(s.id); }}
+                title={isHighlit ? `${s.name} — the card's follow-up has a target here` : undefined}>
                 <div style={{ fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
                   <span>{s.name}</span>
                   <span style={{ opacity: 0.6 }}>({s.vp})</span>
@@ -722,10 +734,12 @@ export function MapView({ calibrate = false, editRoutes = false, G, clickableSit
           cx = (p.x + centroidX) / 2;
           cy = (p.y + centroidY) / 2;
         }
+        const isHighlit = !!highlightSites?.has(s.id);
         return (
           <div key={`site-pick-${s.id}`}
             onClick={() => onSiteClick?.(s.id)}
-            title={`Pick site: ${s.name}`}
+            title={isHighlit ? `Pick site: ${s.name} — the card's follow-up has a target here`
+                             : `Pick site: ${s.name}`}
             style={{
               position: 'absolute',
               left: `${cx * 100}%`,
@@ -733,9 +747,9 @@ export function MapView({ calibrate = false, editRoutes = false, G, clickableSit
               width: px(88), height: px(88),
               marginLeft: -px(44), marginTop: -px(44),
               borderRadius: '50%',
-              border: '3px dashed #ffcc44',
-              background: 'rgba(255, 204, 68, 0.12)',
-              boxShadow: '0 0 16px rgba(255, 204, 68, 0.6)',
+              border: isHighlit ? '4px solid #66ff9e' : '3px dashed #ffcc44',
+              background: isHighlit ? 'rgba(102, 255, 158, 0.18)' : 'rgba(255, 204, 68, 0.12)',
+              boxShadow: isHighlit ? '0 0 22px rgba(102, 255, 158, 0.85)' : '0 0 16px rgba(255, 204, 68, 0.6)',
               cursor: 'pointer',
               zIndex: 9,
               animation: 'tot-site-pulse 1.4s ease-in-out infinite',

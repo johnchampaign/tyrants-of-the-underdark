@@ -51,5 +51,5 @@ registerAll({
   'marlos-urnrayle':      sequence(grant({ influence: 1 }), flagEotPromote(), recruitFromMarketFiltered({ aspect: 'Ambition', maxCost: 4 })),
   'olhydra':              sequence(supplantChoice({ whiteOnly: true, anywhere: true }), focus('Conquest', deployChoice({ count: 2 }))),
   'vanifer':              sequence(assassinateChoice(), recruitFromMarketFiltered({ aspect: 'Malice', maxCost: 4 })),
-  'yan-c-bin':            sequence(placeSpyAtChosenSite(), assassinateAtLastPlacedSpySite(), focus('Guile', placeSpyAtChosenSite())),
+  'yan-c-bin':            sequence(placeSpyAtChosenSite({ followUp: 'assassinate' }), assassinateAtLastPlacedSpySite(), focus('Guile', placeSpyAtChosenSite())),
 });

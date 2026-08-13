@@ -58,7 +58,7 @@ registerAll({
                             { label: 'Place a spy', handler: placeSpyAtChosenSite() },
                             { label: 'Return a spy → draw 2', handler: sequence(returnOwnSpyChoice(), grant({ draw: 2 })), available: playerHasOwnSpy }),
   'succubus':             devourFromHandCost(sequence(
-                            placeSpyAtChosenSite(),
+                            placeSpyAtChosenSite({ followUp: 'assassinate' }),
                             assassinateAtLastPlacedSpySite())),
   'vrock':                chooseOne(
                             { label: 'Place a spy', handler: placeSpyAtChosenSite() },

@@ -48,7 +48,7 @@ registerAll({
 
   // Cost 2 — Wraith: spy; optional devour-self → assassinate at the spy site
   'wraith':              sequence(
-                           placeSpyAtChosenSite(),
+                           placeSpyAtChosenSite({ followUp: 'assassinate' }),
                            optionalDevourSelfThen(assassinateAtLastPlacedSpySite(),
                                                   'Devour Wraith to assassinate at the spy site?')),
 
@@ -262,7 +262,7 @@ registerAll({
   //   Lich's deploy uses the plain deploy keyword — so placement is
   //   presence-restricted (restrictToPresence), per rulebook p.12.
   'lich':                sequence(
-                           placeSpyAtChosenSite(),
+                           placeSpyAtChosenSite({ followUp: 'opponent-troop' }),
                            (ctx => {
                              interface S { phase: 'check' | 'pick-victim' | 'taking'; victimPid?: string; subState?: unknown }
                              let state = (ctx.handlerState as S | null) ?? { phase: 'check' };

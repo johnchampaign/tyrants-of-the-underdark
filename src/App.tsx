@@ -970,6 +970,14 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
     ? new Set((humanSpacePick.options as string[] | undefined) ?? [])
     : baseActionClickableSpaces;
 
+  // Advisory subset of the clickable sites: the ones where the card's *next*
+  // step (assassinate / supplant / the "opponent troop here" bonus) actually
+  // has something to bite on. Every clickable site stays clickable — this only
+  // changes how the ring is drawn. See PendingChoice.highlight (#105).
+  const highlightSites = humanSitePick?.highlight
+    ? new Set(humanSitePick.highlight as string[])
+    : undefined;
+
   const handleSiteClick = (siteId: string) => {
     if (G.setupPhase && myTurn) { moves.deployStartingTroop(siteId); return; }
     if (humanSitePick) { moves.resolveChoice(siteId); return; }
@@ -1793,6 +1801,11 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
                   Decline
                 </button>
               )}
+              {(humanMapPick.highlight?.length ?? 0) > 0 && (
+                <div style={{ marginTop: 4, fontSize: 12, opacity: 0.85 }}>
+                  Green rings mark the sites where this card’s follow-up has a target.
+                </div>
+              )}
             </div>
           )}
           {/* choose-one / select-player prompts surfaced here too — without
@@ -1809,6 +1822,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
           {actionBar}
           <MapView G={G}
             clickableSites={startingClickable} onSiteClick={handleSiteClick}
+            highlightSites={highlightSites}
             clickableSpaces={clickableSpaces} onSpaceClick={handleSpaceClick} />
         </div>
       )}
@@ -1817,6 +1831,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
           G={G} ctx={ctx} myTurn={myTurn} p={p} moves={moves}
           playCardSafe={playCardSafe}
           startingClickable={startingClickable} handleSiteClick={handleSiteClick}
+          highlightSites={highlightSites}
           clickableSpaces={clickableSpaces} handleSpaceClick={handleSpaceClick}
           clickableMarketSlots={clickableMarketSlots}
           humanMapPick={humanMapPick}
@@ -1865,6 +1880,11 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
                   so it can't contradict it. */}
               {G.pendingChoice.kind === 'select-card-in-hand' && ' Click a card in your hand.'}
               {G.pendingChoice.kind === 'select-site' && ' Click a glowing site on the map.'}
+              {/* #105: for place-a-spy prompts whose card acts at that same
+                  site afterwards, say which rings are the ones that pay off. */}
+              {G.pendingChoice.kind === 'select-site'
+                && (G.pendingChoice.highlight?.length ?? 0) > 0
+                && ' The green rings are where this card’s follow-up has a target.'}
               {G.pendingChoice.kind === 'select-troop-space' && ' Click a glowing troop space on the map.'}
             </div>
             {G.pendingChoice.kind === 'choose-one' && G.pendingChoice.playerId === me && (
@@ -2377,10 +2397,12 @@ function SplitPlayView(props: {
   playCardSafe: (idx: number) => void;
   startingClickable: Set<string> | undefined;
   handleSiteClick: (siteId: string) => void;
+  /** Advisory subset of startingClickable whose ring is drawn solid (#105). */
+  highlightSites: Set<string> | undefined;
   clickableSpaces: Set<string> | undefined;
   handleSpaceClick: (spaceId: string) => void;
   clickableMarketSlots: Set<number> | null | undefined;
-  humanMapPick: { prompt: string; optional?: boolean } | null;
+  humanMapPick: { prompt: string; optional?: boolean; highlight?: string[] } | null;
   actionBar: React.ReactNode;
   interactivePromptBar: React.ReactNode;
   /** Seat the local human controls — '0' in hotseat, the server-assigned seat
@@ -2390,7 +2412,7 @@ function SplitPlayView(props: {
   onViewPile: (pile: 'deck' | 'discard' | 'inner' | 'trophy' | 'played') => void;
 }) {
   const { G, myTurn, p, moves, playCardSafe,
-          startingClickable, handleSiteClick, clickableSpaces, handleSpaceClick,
+          startingClickable, handleSiteClick, highlightSites, clickableSpaces, handleSpaceClick,
           clickableMarketSlots, humanMapPick, actionBar, interactivePromptBar,
           mySeat: me, onViewPile } = props;
   const [focus, setFocus] = useState<'map' | 'cards' | null>(null);
@@ -2425,6 +2447,11 @@ function SplitPlayView(props: {
             <button onClick={() => moves.resolveChoice(null)} style={{ marginLeft: 12, padding: '2px 8px', fontSize: 12 }}>
               Decline
             </button>
+          )}
+          {(humanMapPick.highlight?.length ?? 0) > 0 && (
+            <div style={{ marginTop: 4, fontSize: 12, opacity: 0.85 }}>
+              Green rings mark the sites where this card’s follow-up has a target.
+            </div>
           )}
         </div>
       )}
@@ -2511,6 +2538,7 @@ function SplitPlayView(props: {
       <div onMouseEnter={enterMap} onMouseLeave={leaveMap} style={sectionBox('map')}>
         <MapView G={G}
           clickableSites={startingClickable} onSiteClick={handleSiteClick}
+          highlightSites={highlightSites}
           clickableSpaces={clickableSpaces} onSpaceClick={handleSpaceClick} />
       </div>
       <div onMouseEnter={enterCards} onMouseLeave={leaveCards} style={sectionBox('cards')}>

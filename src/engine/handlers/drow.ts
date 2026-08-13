@@ -32,7 +32,7 @@ registerAll({
   'chosen-of-lolth':      sequence(returnEnemyTroopOrSpyChoice({ fizzleIfNoTargets: true }), flagEotPromote()),
   'council-member':       sequence(moveEnemyTroopChoice({ count: 2, optional: true }), flagEotPromote()),
 
-  'infiltrator':          sequence(placeSpyAtChosenSite(), ifAnotherPlayerTroopAtLastPlacedSpySite(grant({ power: 1 }))),
+  'infiltrator':          sequence(placeSpyAtChosenSite({ followUp: 'opponent-troop' }), ifAnotherPlayerTroopAtLastPlacedSpySite(grant({ power: 1 }))),
   'information-broker':   chooseOne(
                             { label: 'Place a spy', handler: placeSpyAtChosenSite() },
                             { label: 'Return a spy → draw 3', handler: sequence(returnOwnSpyChoice(), grant({ draw: 3 })), available: playerHasOwnSpy }),
