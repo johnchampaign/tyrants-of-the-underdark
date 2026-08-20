@@ -81,6 +81,22 @@ function isTyrantsState(state: unknown): state is BgioState {
     && typeof st.ctx.currentPlayer === 'string';
 }
 
+/** Cheap pre-filter, from metadata alone, before spending a query on the
+ *  snapshot. Tyrants seats are the boardgame.io seat indices '0'..'3'; the other
+ *  games on this shared store use named sides ('fp'/'shadow', 'uk'/'japan'/…),
+ *  so their rows are recognisable without fetching anything.
+ *
+ *  This is an optimisation, NOT the safety check — another numerically-seated
+ *  game would pass it. isTyrantsState() on the decoded snapshot is what actually
+ *  gates any read or write. Without this pre-filter the per-sweep cap gets spent
+ *  on foreign rows (in production the first 25 rows were ALL foreign), so real
+ *  Tyrants games would never be reached. */
+function looksLikeTyrantsMeta(meta: GameMeta): boolean {
+  const seats = meta.players ?? [];
+  return seats.length >= 2 && seats.length <= 4
+    && seats.every((p) => /^[0-3]$/.test(p));
+}
+
 export interface SweepResult {
   scanned: number;
   /** Seats newly marked as forfeited this sweep. */
@@ -120,8 +136,13 @@ export async function sweepAbandonedSeats(opts: {
   // We keep the same clock ourselves instead, writing only to rows we have
   // positively identified as Tyrants games.
 
-  const games = await opts.store.listActiveGames();
-  for (const meta of games.slice(0, MAX_GAMES_PER_SWEEP)) {
+  const allGames = await opts.store.listActiveGames();
+  // Cap on PLAUSIBLE games, not raw rows: the store is shared and dominated by
+  // other games, so slicing the raw list just re-scans the same foreign rows
+  // every sweep and never reaches ours.
+  const candidates = allGames.filter(looksLikeTyrantsMeta);
+  out.skippedForeign += allGames.length - candidates.length;
+  for (const meta of candidates.slice(0, MAX_GAMES_PER_SWEEP)) {
     out.scanned++;
     try {
       const latest = await opts.store.getLatest(meta.gameId);

@@ -137,6 +137,22 @@ try {
       state: 'v2:' + JSON.stringify({ G: { fellowship: { track: 3 }, hunt: [] }, ctx: { phase: 'action' } }),
     } as never);
 
+    // A foreign game with NUMERIC seats slips past the cheap metadata
+    // pre-filter, so this exercises the state-shape gate that actually protects
+    // other games' data.
+    const sneakyId = 'foreign-game-numeric';
+    await store.putGameMeta({
+      gameId: sneakyId,
+      players: ['0', '1'],
+      tokens: { '0': 'tok-a', '1': 'tok-b' },
+      createdAt: new Date(T0).toISOString(),
+      resolved: false,
+    } as never);
+    await store.putSnapshot(sneakyId, {
+      turn: 2,
+      state: 'v2:' + JSON.stringify({ G: { board: ['x', 'o'], scores: {} }, ctx: { currentPlayer: '0' } }),
+    } as never);
+
     const s5 = await sweep(T0 + ABANDON_AFTER_MS * 3);
     const after = await store.getGameMeta(foreignId);
     if (s5.skippedForeign < 1) fail('the foreign game was not recognised as foreign');
@@ -145,6 +161,11 @@ try {
     else pass('foreign game was not marked resolved');
     if (after?.reminder) fail('the sweep wrote its clock onto another game\'s row');
     else pass('foreign game row was not written to at all');
+
+    const sneaky = await store.getGameMeta(sneakyId);
+    if (sneaky?.resolved) fail('a numerically-seated foreign game was marked resolved');
+    else if (sneaky?.reminder) fail('the sweep wrote its clock onto a numerically-seated foreign game');
+    else pass('a foreign game with numeric seats is still rejected by the state-shape gate');
   }
 } finally {
   rmSync(root, { recursive: true, force: true });
