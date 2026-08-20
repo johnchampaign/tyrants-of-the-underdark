@@ -8,7 +8,9 @@
 // adapter's initialBgioState (boardgame.io's InitializeGame under the hood).
 // The seats are the bgio seat-index strings '0'..'3'.
 
-import type { GameServer, ReportSubmission } from 'digital-boardgame-framework/server';
+import type { GameServer, ReportSubmission, SnapshotStore } from 'digital-boardgame-framework/server';
+import type { Codec, PlayerController } from 'digital-boardgame-framework';
+import { sweepAbandonedSeats } from './sweep';
 import type { BgioState, TyrantsAction, PlayerId } from '../src/adapter/tyrantsAdapter';
 import { initialBgioState } from '../src/adapter/tyrantsAdapter';
 
@@ -37,12 +39,23 @@ function activeSectionsFor(numPlayers: number): Array<'left' | 'center' | 'right
   return ['left', 'center', 'right'];
 }
 
+/** Extra wiring the sweep needs but the plain request routes don't: it reads
+ *  and decodes snapshots directly, which the GameServer keeps private. Optional
+ *  so existing callers (and the chat test harness) are unaffected — without it
+ *  the sweep route simply reports itself unavailable rather than 500ing. */
+export interface SweepDeps {
+  store: SnapshotStore;
+  codec: Codec<BgioState>;
+  controllers: Record<string, PlayerController<BgioState, TyrantsAction, PlayerId>>;
+}
+
 export async function handleApi(
   server: Server,
   method: string,
   pathname: string,
   query: URLSearchParams,
   body: unknown,
+  sweepDeps?: SweepDeps,
 ): Promise<ApiResult> {
   const segs = pathname.replace(/\/+$/, '').split('/').filter(Boolean);
   if (segs[0] !== 'api') return { status: 404, body: { error: 'not found' } };
@@ -129,6 +142,28 @@ export async function handleApi(
         }
         return { status: 200, body: await server.postMessage(gameId, token, text) };
       }
+    }
+
+    // ---- abandoned-seat sweep ----
+    //
+    // POST /api/sweep — hands a bot the turns of anyone who has stopped playing,
+    // so the rest of the table isn't stuck forever. Idempotent and safe to call
+    // often: it only acts on seats that have sat on a turn past the window, and
+    // a player who comes back simply resets the clock.
+    //
+    // Left unauthenticated on purpose: it takes no input, exposes no data, and
+    // does nothing a caller could steer — the worst a stranger can do is make an
+    // already-overdue bot turn happen sooner. Gating it behind a secret would
+    // just mean it never actually runs.
+    if (segs[1] === 'sweep' && method === 'POST') {
+      if (!sweepDeps) return { status: 501, body: { error: 'sweep not wired on this deployment' } };
+      const result = await sweepAbandonedSeats({
+        server,
+        store: sweepDeps.store,
+        codec: sweepDeps.codec,
+        controllers: sweepDeps.controllers,
+      });
+      return { status: 200, body: result };
     }
 
     // ---- reports (public triage) ----

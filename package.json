@@ -23,13 +23,15 @@
     "test:ai-drive": "vite-node scripts/test-ai-drive.ts",
     "test:online-path": "vite-node scripts/test-online-path.ts",
     "test:repro-102": "vite-node scripts/test-repro-102.ts",
-    "ci": "tsc --noEmit && npm run test:card-data && npm run test:ai-drive && npm run test:online-path && npm run test:repro-102 && npm run test:repro-103 && npm run test:repro-104 && npm run test:repro-105",
-    "ship": "npm run test:card-data && npm run test:ai-drive && npm run test:online-path && npm run test:repro-102 && npm run test:repro-103 && npm run test:repro-104 && npm run test:repro-105 && npm run build && npx wrangler pages deploy dist --project-name tyrants-online --branch main",
+    "ci": "tsc --noEmit && npm run test:card-data && npm run test:ai-drive && npm run test:online-path && npm run test:repro-102 && npm run test:repro-103 && npm run test:repro-104 && npm run test:repro-105 && npm run test:abandoned-seat && npm run test:abandoned-sweep",
+    "ship": "npm run test:card-data && npm run test:ai-drive && npm run test:online-path && npm run test:repro-102 && npm run test:repro-103 && npm run test:repro-104 && npm run test:repro-105 && npm run test:abandoned-seat && npm run test:abandoned-sweep && npm run build && npx wrangler pages deploy dist --project-name tyrants-online --branch main",
     "test:repro-103": "vite-node scripts/test-repro-103.ts",
     "fuzz:focus": "vite-node scripts/fuzz-focus-103.ts",
     "test:repro-104": "vite-node scripts/test-repro-104.ts",
     "test:repro-105": "vite-node scripts/test-repro-105.ts",
-    "test:card-data": "vite-node scripts/test-card-data-sanity.ts"
+    "test:card-data": "vite-node scripts/test-card-data-sanity.ts",
+    "test:abandoned-seat": "vite-node scripts/test-abandoned-seat.ts",
+    "test:abandoned-sweep": "vite-node scripts/test-abandoned-sweep.ts"
   },
   "keywords": [],
   "author": "",

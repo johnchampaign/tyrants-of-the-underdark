@@ -234,6 +234,15 @@ export interface TyrantsState {
    *  restore-points server-side is pure waste (#104 follow-up). */
   _online?: boolean;
 
+  /** Seats whose player walked away and had a bot finish their turns for them.
+   *  Recorded by the `forfeitSeat` move (server-side sweep only — never offered
+   *  in legalActions, so no player can forfeit anyone, including themselves, by
+   *  accident). Purely a scoring/placement marker: the seat keeps playing so the
+   *  table isn't stuck, but it can never win and always ranks below every seat
+   *  that played its own game. Without this, walking away from a losing position
+   *  would be the cheapest way to avoid recording the loss. */
+  forfeitedSeats?: string[];
+
   /** Player ID (as a string seat index) chosen at setup to act first. Drives
    *  turn.order.first; the human is always seated at "0" but doesn't necessarily
    *  go first. */
@@ -1010,6 +1019,26 @@ export const TyrantsGame: Game<TyrantsState> = {
         Mechanics.gainInfluence(G, pid, cost);
         return INVALID_MOVE;
       }
+    },
+
+    /** Mark a seat as having abandoned the game. Server-side only: the online
+     *  sweep submits this with the stale seat's own token once that seat has sat
+     *  on its turn past the abandonment window, just before a bot starts taking
+     *  its turns. Deliberately absent from legalActions — it is not a player
+     *  choice, and tryApplyAction (not legalActions) is what the server
+     *  validates against, so it stays unreachable from any client UI.
+     *
+     *  Records the flag and nothing else: the turn does NOT pass and the game
+     *  does NOT end, because the point is for the seat to keep playing so the
+     *  remaining players can finish. */
+    forfeitSeat: ({ G }, seat: string) => {
+      if (G.setupPhase) return INVALID_MOVE;
+      if (!G.players[seat]) return INVALID_MOVE;
+      if (!G.forfeitedSeats) G.forfeitedSeats = [];
+      if (G.forfeitedSeats.includes(seat)) return; // idempotent — sweeps repeat
+      G.forfeitedSeats.push(seat);
+      Mechanics.log(G, `P${Number(seat) + 1} left the game — a bot will take their turns, and they forfeit their placing.`,
+        { kind: 'seat.forfeit', payload: { seat }, side: seat });
     },
 
     deployTroop: ({ G, ctx }, spaceId: string) => {

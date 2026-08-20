@@ -61,11 +61,15 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
 
   const site = env.SITE_URL ?? url.origin;
   const relay = (env.RELAY_URL ?? DEFAULT_RELAY).replace(/\/$/, '');
+  // Held separately so the abandoned-seat sweep can reach them: it reads and
+  // decodes snapshot rows directly, which GameServer keeps private.
+  const store = new SupabaseStore(_supabase);
+  const codec = snapshotCodec();
   const server = new GameServer<BgioState, TyrantsAction, PlayerId>({
     snapshotHistory: 20,   // cap per-game snapshot history (framework >=0.32)
     adapter: tyrantsAdapter,
-    codec: snapshotCodec(),
-    store: new SupabaseStore(_supabase),
+    codec,
+    store,
     // Server-driven, rated AI opponents (random + single-ply heuristic). The
     // deep-search lookahead AI is deliberately NOT wired here — it would blow
     // the Worker per-move CPU budget. See src/online/aiControllers.ts.
@@ -91,7 +95,8 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
     try { body = await request.json(); } catch { body = {}; }
   }
 
-  const result = await handleApi(server, request.method, url.pathname, url.searchParams, body);
+  const result = await handleApi(server, request.method, url.pathname, url.searchParams, body,
+    { store, codec, controllers: tyrantsControllers });
   return new Response(JSON.stringify(result.body), {
     status: result.status,
     headers: { 'Content-Type': 'application/json' },

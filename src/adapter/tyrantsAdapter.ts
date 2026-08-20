@@ -44,7 +44,11 @@ export type TyrantsAction =
   | { kind: 'assassinateTroop'; spaceId: string }
   | { kind: 'returnEnemySpy'; siteId: string; targetColor: Color }
   | { kind: 'resolveChoice'; response: unknown }
-  | { kind: 'endTurn' };
+  | { kind: 'endTurn' }
+  // Server-side only (the abandoned-seat sweep). Never returned by
+  // legalActions, so no client can reach it; the server validates via
+  // tryApplyAction, which accepts it.
+  | { kind: 'forfeitSeat'; seat: PlayerId };
 
 /** boardgame.io's full client/transport state. We treat it as opaque-ish: the
  *  adapter only reaches into `.G` and `.ctx`; `plugins` etc. ride along. */
@@ -148,6 +152,7 @@ function toBgioAction(action: TyrantsAction, actor: PlayerId, currentPlayer: str
     // resolves `G.pendingChoice` (which carries its own `playerId`) regardless
     // of who submitted it, so this is safe and fixes the cross-player lock (#91).
     case 'resolveChoice':       return mk('resolveChoice', [action.response], currentPlayer);
+    case 'forfeitSeat':       return mk('forfeitSeat', [action.seat]);
     case 'endTurn':             return mk('endTurn', []);
   }
 }
@@ -410,23 +415,38 @@ function redactState(state: BgioState, viewer: PlayerId | null): BgioState {
 function resultOf(state: BgioState): GameResult<PlayerId> | null {
   if (!state.ctx.gameover) return null;
   const scores = scoreAll(state.G);
+  // A seat that walked away and was finished by a bot forfeits its placing: it
+  // can never win, and it ranks below every seat that played its own game,
+  // whatever the bot managed to score for it. Otherwise abandoning a losing
+  // position would be a way to dodge recording the loss.
+  const forfeited = new Set(state.G.forfeitedSeats ?? []);
+  const played = Object.entries(scores).filter(([pid]) => !forfeited.has(pid));
+
+  // Winners come from the seats that actually played. If EVERY seat forfeited
+  // there is no one to credit, so fall back to score alone rather than invent a
+  // winner from a table of bots.
+  const pool = played.length > 0 ? played : Object.entries(scores);
   let best = -Infinity;
-  for (const sb of Object.values(scores)) {
+  for (const [, sb] of pool) {
     if (sb.total > best) best = sb.total;
   }
   const winners: PlayerId[] = [];
-  for (const [pid, sb] of Object.entries(scores)) {
+  for (const [pid, sb] of pool) {
     if (sb.total === best) winners.push(pid);
   }
   // Finishing order (best-first) for N-player ratings. Ties on exact final score
   // are broken by seat order — rare, and only a half-pairwise rating difference.
-  const ranking = Object.entries(scores)
-    .sort(([, a], [, b]) => b.total - a.total)
-    .map(([pid]) => pid);
+  const byScore = (a: [string, { total: number }], b: [string, { total: number }]) => b[1].total - a[1].total;
+  const ranking = [
+    ...played.sort(byScore).map(([pid]) => pid),
+    ...Object.entries(scores).filter(([pid]) => forfeited.has(pid)).sort(byScore).map(([pid]) => pid),
+  ];
   return {
     winners,
     ranking,
-    reason: winners.length > 1 ? 'tie on final score' : 'highest final score',
+    reason: forfeited.size > 0
+      ? `${winners.length > 1 ? 'tie on final score' : 'highest final score'} (${forfeited.size} seat(s) forfeited)`
+      : winners.length > 1 ? 'tie on final score' : 'highest final score',
   };
 }
 
