@@ -116,6 +116,36 @@ try {
       else pass('taking a turn resets the clock — a returning player is not forfeited');
     }
   }
+  // ---- 5. a foreign game on the shared store is never touched ----
+  // The store is one Supabase project shared by every game on the hub, and
+  // listActiveGames() has no app filter. A row we can't positively identify as
+  // Tyrants must be left completely alone — no clock written, no moves, and
+  // above all not marked resolved.
+  {
+    const foreignId = 'foreign-game-1';
+    const foreignMeta = {
+      gameId: foreignId,
+      players: ['fp', 'shadow'],
+      tokens: { fp: 'tok-fp', shadow: 'tok-shadow' },
+      createdAt: new Date(T0).toISOString(),
+      resolved: false,
+    };
+    await store.putGameMeta(foreignMeta as never);
+    // Something shaped like another game entirely.
+    await store.putSnapshot(foreignId, {
+      turn: 4,
+      state: 'v2:' + JSON.stringify({ G: { fellowship: { track: 3 }, hunt: [] }, ctx: { phase: 'action' } }),
+    } as never);
+
+    const s5 = await sweep(T0 + ABANDON_AFTER_MS * 3);
+    const after = await store.getGameMeta(foreignId);
+    if (s5.skippedForeign < 1) fail('the foreign game was not recognised as foreign');
+    else pass(`foreign game skipped (${s5.skippedForeign} row(s))`);
+    if (after?.resolved) fail('THE SWEEP MARKED ANOTHER GAME RESOLVED — data corruption');
+    else pass('foreign game was not marked resolved');
+    if (after?.reminder) fail('the sweep wrote its clock onto another game\'s row');
+    else pass('foreign game row was not written to at all');
+  }
 } finally {
   rmSync(root, { recursive: true, force: true });
 }

@@ -53,6 +53,34 @@ export function decodeRow(codec: Codec<BgioState>, raw: string, schemaVersion: n
   return codec.decode(inner);
 }
 
+/** Is this decoded row actually one of OUR games?
+ *
+ *  The store is a single Supabase project shared by every game on the hub —
+ *  `/api/reports` served from this very deployment returns War of the Ring and
+ *  Axis & Allies rows — and `listActiveGames()` has no app filter, so it hands
+ *  back every unresolved game of every game. Decoding a foreign row with the
+ *  Tyrants adapter is not a clean failure either: `migrate()` only touches
+ *  G.log, so a foreign state can sail through it and reach `currentActor`,
+ *  which reads ctx.currentPlayer and returns null for anything without a
+ *  boardgame.io ctx — indistinguishable from "this game is over". Anything
+ *  acting on that would corrupt another game's data.
+ *
+ *  So: positively identify a Tyrants state before touching the row, and never
+ *  write to one we can't identify. */
+function isTyrantsState(state: unknown): state is BgioState {
+  const st = state as Partial<BgioState> | null;
+  const G = st?.G as Record<string, unknown> | undefined;
+  return !!G
+    && typeof G === 'object'
+    && typeof (G as { setupPhase?: unknown }).setupPhase === 'boolean'
+    && !!(G as { market?: { row?: unknown } }).market
+    && Array.isArray((G as { market?: { row?: unknown[] } }).market?.row)
+    && !!(G as { troops?: unknown }).troops
+    && !!(G as { players?: unknown }).players
+    && !!st?.ctx
+    && typeof st.ctx.currentPlayer === 'string';
+}
+
 export interface SweepResult {
   scanned: number;
   /** Seats newly marked as forfeited this sweep. */
@@ -61,6 +89,8 @@ export interface SweepResult {
   movesPlayed: number;
   /** Games where a takeover was attempted but errored (logged, never thrown). */
   errored: number;
+  /** Rows that belong to another game on the shared store, left untouched. */
+  skippedForeign: number;
 }
 
 /** A seat is human unless the framework recorded it as one of its own AI seats.
@@ -81,13 +111,14 @@ export async function sweepAbandonedSeats(opts: {
 }): Promise<SweepResult> {
   const olderThanMs = opts.olderThanMs ?? ABANDON_AFTER_MS;
   const now = opts.nowMs ?? Date.now();
-  const out: SweepResult = { scanned: 0, forfeited: 0, movesPlayed: 0, errored: 0 };
+  const out: SweepResult = { scanned: 0, forfeited: 0, movesPlayed: 0, errored: 0, skippedForeign: 0 };
 
-  // Maintain the inactivity clock (and mark finished games resolved). This is
-  // the only per-turn timestamp the framework keeps: it restarts whenever the
-  // turn advances, so `reminder.since` is "when the current turn began being
-  // waited on". It only emails seats that have an address recorded.
-  await opts.server.sweepTurnReminders({ olderThanMs, nowMs: now });
+  // NB: deliberately NOT server.sweepTurnReminders(). It iterates the same
+  // unscoped listActiveGames(), decodes every row with OUR adapter, and marks a
+  // game resolved whenever currentActor comes back null — which is exactly what
+  // a foreign game decodes to. Running it here would quietly close other games.
+  // We keep the same clock ourselves instead, writing only to rows we have
+  // positively identified as Tyrants games.
 
   const games = await opts.store.listActiveGames();
   for (const meta of games.slice(0, MAX_GAMES_PER_SWEEP)) {
@@ -96,14 +127,22 @@ export async function sweepAbandonedSeats(opts: {
       const latest = await opts.store.getLatest(meta.gameId);
       if (!latest) continue;
 
+      // Identify the game BEFORE reading or writing anything about it.
+      let state = decodeRow(opts.codec, latest.state, SCHEMA_VERSION);
+      if (!state || !isTyrantsState(state)) { out.skippedForeign++; continue; }
+
       const r = meta.reminder;
       // No clock yet, or the turn moved since we last looked → not abandoned.
-      // (sweepTurnReminders above has just (re)started it for next time.)
-      if (!r || r.turn !== latest.turn) continue;
+      // Start/restart it and wait for the next sweep.
+      if (!r || r.turn !== latest.turn) {
+        await opts.store.putGameMeta({
+          ...meta,
+          reminder: { turn: latest.turn, since: new Date(now).toISOString(), sent: r?.sent ?? false },
+        });
+        continue;
+      }
       if (now - new Date(r.since).getTime() < olderThanMs) continue;
 
-      let state = decodeRow(opts.codec, latest.state, SCHEMA_VERSION);
-      if (!state) continue;   // older schema — leave it to the server's migrate path
       let actor = tyrantsAdapter.currentActor(state);
       if (actor === null) continue;                  // game over
       if (!isHumanSeat(meta, actor)) continue;       // already a bot seat
