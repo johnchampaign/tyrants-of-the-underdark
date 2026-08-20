@@ -22,7 +22,7 @@
 //      server clones per move stays flat across a whole turn.
 //
 // Run: npx vite-node scripts/test-repro-104.ts
-import { InitializeGame } from 'boardgame.io/internal';
+import { CreateGameReducer, InitializeGame } from 'boardgame.io/internal';
 import { TyrantsGame } from '../src/game';
 import { tyrantsAdapter, initialBgioState, type BgioState } from '../src/adapter/tyrantsAdapter';
 import { snapshotCodec } from '../src/online/snapshotCodec';
@@ -107,33 +107,58 @@ for (let i = 0; i < 400 && s.G.setupPhase; i++) {
 }
 if (s.G.setupPhase) fail('could not get past setup — the rest of this test is meaningless');
 
-const startSize = size(s);
-let peak = startSize;
-let moves = 0;
-const actorAtStart = tyrantsAdapter.currentActor(s)!;
-for (let i = 0; i < 100; i++) {
-  const actor = tyrantsAdapter.currentActor(s);
-  if (actor === null || actor !== actorAtStart) break;
-  const legal = tyrantsAdapter.legalActions(s, actor);
-  if (!legal.length) break;
-  const decided = toAction(decideHeuristicMove(s.G as any, actor));
-  const chosen = decided && legal.some(a => JSON.stringify(a) === JSON.stringify(decided))
-    ? decided : legal[0];
-  const r = tyrantsAdapter.tryApplyAction!(s, chosen, actor);
-  if (!r.ok) break;
-  s = r.state;
-  moves++;
-  peak = Math.max(peak, size(s));
-}
-if (moves < 3) fail(`only drove ${moves} moves — not a representative turn`);
-else pass(`drove a ${moves}-move turn through the adapter`);
+// Drive one turn for EVERY seat, not just whoever happens to go first.
+// The first player is chosen randomly at setup, and the bloat this guards
+// against only ever affected seat 0 (UNDO_SEAT) — so a single-turn version of
+// this check passed or failed at random depending on the shuffle, roughly a
+// coin flip. Measuring each seat in turn makes the guard deterministic AND
+// actually exercises the seat that used to regress.
+const seatsSeen: string[] = [];
+let totalMoves = 0;
+for (let turnIdx = 0; turnIdx < 2; turnIdx++) {
+  const actorAtStart = tyrantsAdapter.currentActor(s);
+  if (actorAtStart === null) { fail(`no actor to drive at turn ${turnIdx}`); break; }
+  const startSize = size(s);
+  let peak = startSize;
+  let moves = 0;
+  for (let i = 0; i < 100; i++) {
+    const actor = tyrantsAdapter.currentActor(s);
+    if (actor === null || actor !== actorAtStart) break;
+    const legal = tyrantsAdapter.legalActions(s, actor);
+    if (!legal.length) break;
+    const decided = toAction(decideHeuristicMove(s.G as any, actor));
+    const chosen = decided && legal.some(a => JSON.stringify(a) === JSON.stringify(decided))
+      ? decided : legal[0];
+    const r = tyrantsAdapter.tryApplyAction!(s, chosen, actor);
+    if (!r.ok) break;
+    s = r.state;
+    moves++;
+    peak = Math.max(peak, size(s));
+  }
+  seatsSeen.push(actorAtStart);
+  totalMoves += moves;
+  if (moves < 3) { fail(`seat ${actorAtStart}: only drove ${moves} moves — not a representative turn`); continue; }
 
-// Allow generous headroom for the turn's real state growth (cards move, the log
-// grows); what must NOT happen is a per-move full copy of G piling up.
-const growth = peak / startSize;
-if (growth > 1.6) {
-  fail(`state grew ${growth.toFixed(1)}x over one turn (${startSize} → ${peak}) — undo history is accumulating again`);
-} else pass(`state stayed flat over a turn (${growth.toFixed(2)}x: ${startSize} → ${peak})`);
+  // Generous headroom for the turn's real growth (cards move, the log grows);
+  // what must NOT happen is a per-move full copy of G piling up.
+  const growth = peak / startSize;
+  if (growth > 1.6) {
+    fail(`seat ${actorAtStart}: state grew ${growth.toFixed(1)}x over one turn (${startSize} → ${peak}) — undo history is accumulating again`);
+  } else {
+    pass(`seat ${actorAtStart}: state stayed flat over a ${moves}-move turn (${growth.toFixed(2)}x: ${startSize} → ${peak})`);
+  }
+}
+if (new Set(seatsSeen).size < 2) {
+  fail(`only exercised seat(s) ${[...new Set(seatsSeen)].join(", ")} — seat 0 is the one that used to bloat, so both must be covered`);
+} else {
+  pass(`covered both seats (${seatsSeen.join(" then ")}) across ${totalMoves} moves`);
+}
+
+// Belt and braces: online states must never accumulate undo restore-points at
+// all, whichever seat is acting.
+const onlineUndo = (s.G.undoStack ?? []).length;
+if (onlineUndo > 0) fail(`online state carries ${onlineUndo} undo restore-point(s) — they are unusable online`);
+else pass('online state carries no undo restore-points');
 
 const undoLen = Array.isArray(s._undo) ? (s._undo as unknown[]).length : -1;
 if (undoLen > 0) fail(`adapter reducer accumulated ${undoLen} _undo entries`);
@@ -147,6 +172,51 @@ const hotseat = InitializeGame({ game: TyrantsGame, numPlayers: 2 }) as unknown 
 if (!Array.isArray(hotseat._undo) || (hotseat._undo as unknown[]).length === 0) {
   fail('hotseat lost its boardgame.io undo stack — TyrantsGame was mutated');
 } else pass('hotseat still initializes with an undo stack');
+
+// The online skip must NOT reach hotseat: seat 0 there still has to collect a
+// restore-point per move, or the Undo button silently stops working. Drive a
+// real hotseat turn through the plain TyrantsGame reducer and watch G.undoStack
+// actually fill up.
+{
+  const hotReducer = CreateGameReducer({ game: TyrantsGame }) as unknown as
+    (st: unknown, a: unknown) => BgioState;
+  let h = InitializeGame({ game: TyrantsGame, numPlayers: 2 }) as unknown as BgioState;
+  // Past setup: each seat places a starting troop.
+  for (let i = 0; i < 40 && h.G.setupPhase; i++) {
+    const pid = h.ctx.currentPlayer;
+    const mv = decideHeuristicMove(h.G as any, pid);
+    if (!mv) break;
+    h = hotReducer(h, { type: 'MAKE_MOVE', payload: { type: mv.name, args: mv.args ?? [], playerID: pid } });
+  }
+  if (h.G.setupPhase) {
+    fail('hotseat: could not get past setup — undo-capture check is meaningless');
+  } else {
+    // Only seat 0 (UNDO_SEAT) records restore-points, and the first player is
+    // random — so advance to seat 0's turn before measuring, or this check
+    // passes vacuously half the time.
+    for (let guard = 0; guard < 200 && h.ctx.currentPlayer !== '0'; guard++) {
+      const mv = decideHeuristicMove(h.G as any, h.ctx.currentPlayer);
+      if (!mv) break;
+      h = hotReducer(h, { type: 'MAKE_MOVE', payload: { type: mv.name, args: mv.args ?? [], playerID: h.ctx.currentPlayer } });
+    }
+    if (h.ctx.currentPlayer !== '0') {
+      fail('hotseat: never reached seat 0 — undo-capture check is meaningless');
+    } else {
+      let captured = 0;
+      for (let i = 0; i < 12 && h.ctx.currentPlayer === '0'; i++) {
+        const mv = decideHeuristicMove(h.G as any, '0');
+        if (!mv) break;
+        h = hotReducer(h, { type: 'MAKE_MOVE', payload: { type: mv.name, args: mv.args ?? [], playerID: '0' } });
+        captured = Math.max(captured, (h.G.undoStack ?? []).length);
+      }
+      if (captured === 0) {
+        fail('hotseat seat 0 captured no undo restore-points — the Undo button is dead');
+      } else {
+        pass(`hotseat still captures undo restore-points (seat 0, peak ${captured})`);
+      }
+    }
+  }
+}
 
 console.log(ok ? '\nPASS' : '\nFAIL');
 process.exit(ok ? 0 : 1);

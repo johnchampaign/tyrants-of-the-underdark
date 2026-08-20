@@ -1182,13 +1182,22 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
       })()}
       {(() => {
         const canUndo = myTurn && (G.undoStack?.length ?? 0) > 0;
+        // Undo is a hotseat-only affordance: redactState() zeroes G.undoStack
+        // for every viewer online, so canUndo is permanently false there. The
+        // button was therefore greyed out with the hidden-card explanation,
+        // which is the WRONG reason online and reads as undo being broken
+        // (in-game report #75, "undo doesnt work in multiplayer"). Say which
+        // of the two it actually is.
+        const undoTitle = canUndo
+          ? 'Undo your last action. You can keep undoing back to the start of your turn — but not past anything that revealed a hidden card (a draw or a market buy).'
+          : isOnline
+            ? 'Undo is not available in online games — every move is confirmed by the server as it happens, so there is nothing local to rewind. It works in solo and hotseat games.'
+            : 'Nothing to undo. Actions that reveal a hidden card (drawing, buying from the market) cannot be undone.';
         return (
           <button
             onClick={() => { setBaseAction(null); moves.undo(); }}
             disabled={!canUndo}
-            title={canUndo
-              ? 'Undo your last action. You can keep undoing back to the start of your turn — but not past anything that revealed a hidden card (a draw or a market buy).'
-              : 'Nothing to undo. Actions that reveal a hidden card (drawing, buying from the market) cannot be undone.'}
+            title={undoTitle}
             style={{ padding: '8px 16px', background: canUndo ? '#553a20' : '#2a2a2a', color: canUndo ? 'white' : '#777', border: 'none', borderRadius: 4, cursor: canUndo ? 'pointer' : 'not-allowed', marginLeft: 'auto' }}>
             ↶ Undo{canUndo ? ` (${G.undoStack.length})` : ''}
           </button>

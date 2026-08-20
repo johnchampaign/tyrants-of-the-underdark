@@ -69,6 +69,11 @@ export function snapshotCodec(): Codec<BgioState> {
       // reducer's turn.onBegin push / pushUndoSnapshot see a real array.
       if (!Array.isArray(G.undoStack)) G.undoStack = [];
       if (!Array.isArray(G.snapshots)) G.snapshots = [];
+      // Backfill the online marker for games created before it existed —
+      // anything arriving through this codec IS an online game by definition.
+      // Without it those in-flight games keep paying for undo restore-points
+      // no client can ever use.
+      G._online = true;
       // Snapshots written before the fix still carry a fat `_undo`; drop it on
       // load so an existing game gets cheap again immediately rather than only
       // after its next write. bgio needs the fields to exist as arrays.

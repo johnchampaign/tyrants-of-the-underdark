@@ -227,6 +227,12 @@ export interface TyrantsState {
   /** Set by deployStartingTroop before it calls events.endTurn(); read+cleared in onEnd
    *  to skip the regular turn-end cleanup (discard hand, redraw, site-VP gain). */
   _endingSetupTurn?: boolean;
+  /** True when this state is driven by the ONLINE adapter (stamped at setup by
+   *  tyrantsAdapter, backfilled on decode for games created before the flag
+   *  existed). Undo is unusable online — redactState zeroes G.undoStack for
+   *  every viewer and OnlinePlay stubs undo/redo/loadState — so capturing undo
+   *  restore-points server-side is pure waste (#104 follow-up). */
+  _online?: boolean;
 
   /** Player ID (as a string seat index) chosen at setup to act first. Drives
    *  turn.order.first; the human is always seated at "0" but doesn't necessarily
@@ -412,6 +418,12 @@ const UNDO_SEAT = '0';
  *  (including this entry), so the move becomes non-undoable. No-op for non-
  *  human seats. */
 function pushUndoSnapshot(G: TyrantsState, currentPlayer: string): void {
+  // Online can never use these, so skip before doing any work. Without this,
+  // seat 0 (UNDO_SEAT) piled a full state codec per move into G.undoStack
+  // server-side — ~22KB a move, ~4x live-state growth over a turn. The codec
+  // strips it on write so storage was safe, but the server still built and
+  // hauled it every single move.
+  if (G._online) return;
   if (currentPlayer !== UNDO_SEAT) return;
   if (!G.undoStack) G.undoStack = [];
   G.undoStack.push(encodeSnapshot(G));

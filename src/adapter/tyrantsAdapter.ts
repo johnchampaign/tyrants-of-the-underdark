@@ -91,7 +91,21 @@ type AnyReducer = (s: BgioState, action: unknown) => BgioState;
 // OWN rewind (`G.undoStack` + the `undo` move) is a hotseat-only affordance that
 // this flag does not touch. Hotseat builds its own bgio Client from TyrantsGame
 // and is unaffected — we spread into a copy so TyrantsGame itself is untouched.
-const ONLINE_GAME = { ...TyrantsGame, disableUndo: true };
+// Stamp G._online so the engine can tell it is being driven online. The only
+// thing that reads it today is pushUndoSnapshot, which skips capturing undo
+// restore-points: they are a hotseat affordance that redactState strips from
+// every online view and OnlinePlay stubs out, so building them server-side was
+// ~22KB of dead weight per move (#104 follow-up).
+function markOnline<T>(G: T): T {
+  (G as { _online?: boolean })._online = true;
+  return G;
+}
+const onlineSetup = (
+  setupData?: { halfDecks?: string[]; activeSections?: Array<"left" | "center" | "right"> },
+) => (sa: Parameters<NonNullable<typeof TyrantsGame.setup>>[0]) =>
+  markOnline(TyrantsGame.setup!(sa, setupData));
+
+const ONLINE_GAME = { ...TyrantsGame, disableUndo: true, setup: onlineSetup() };
 
 let _reducer: AnyReducer | null = null;
 function reducer(): AnyReducer {
@@ -108,11 +122,7 @@ export function initialBgioState(
   setupData?: { halfDecks?: string[]; activeSections?: Array<'left' | 'center' | 'right'> },
 ): BgioState {
   const wrapped = setupData
-    ? {
-        ...ONLINE_GAME,
-        setup: (sa: Parameters<NonNullable<typeof TyrantsGame.setup>>[0]) =>
-          TyrantsGame.setup!(sa, setupData),
-      }
+    ? { ...ONLINE_GAME, setup: onlineSetup(setupData) }
     : ONLINE_GAME;
   return InitializeGame({ game: wrapped, numPlayers }) as unknown as BgioState;
 }
