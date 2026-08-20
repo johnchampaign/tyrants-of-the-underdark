@@ -6,37 +6,64 @@ import type { PlayerId } from '../adapter/tyrantsAdapter';
 
 const COLOR_NAMES = ['Black', 'Red', 'Orange', 'Blue'];
 
+/** What occupies a seat at creation time. 'human' means an invite link; any
+ *  other value is a difficulty key from the server's AI controllers. */
+type SeatFill = 'human' | 'random' | 'standard';
+const SEAT_FILL_LABEL: Record<SeatFill, string> = {
+  human: 'Human',
+  random: 'Bot · easy',
+  standard: 'Bot · standard',
+};
+
 export function Lobby() {
   const [numPlayers, setNumPlayers] = useState(2);
+  // Per-seat fill. Seat 0 is always the creator; every other seat is either a
+  // human (gets an invite link) or a server-driven bot. The create API has
+  // always accepted an arbitrary seat->difficulty map — the lobby just never
+  // offered anything except "all human" and a fixed 1v1 vs-AI preset, which is
+  // exactly what the feature request was about.
+  const [seatFill, setSeatFill] = useState<Record<number, SeatFill>>({ 1: 'human', 2: 'human', 3: 'human' });
   const [game, setGame] = useState<Invites | null>(null);
+  // Which seats the CREATED game gave to bots. Kept separately from seatFill so
+  // that fiddling with the pickers afterwards can't mislabel a live game's
+  // invite list. Bot seats get a token from the server like everyone else, but
+  // there is nobody to send it to.
+  const [createdBots, setCreatedBots] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+
+  /** The seats the creator marked as bots, in the API's seat->difficulty shape. */
+  function aiMap(): Partial<Record<PlayerId, string>> {
+    const ai: Record<string, string> = {};
+    for (let seat = 1; seat < numPlayers; seat++) {
+      const fill = seatFill[seat] ?? 'human';
+      if (fill !== 'human') ai[String(seat)] = fill;
+    }
+    return ai as Partial<Record<PlayerId, string>>;
+  }
+
+  const botSeats = aiMap();
+  const botCount = Object.keys(botSeats).length;
+  const humanCount = numPlayers - botCount;
 
   async function onCreate() {
     setBusy(true);
     setErr(null);
     try {
-      const g = await createGame(numPlayers);
+      const g = await createGame(numPlayers, botCount ? botSeats : undefined);
       rememberCreatedGame(g.gameId, g.invites);
+      setCreatedBots(Object.keys(botSeats));
+      // Nobody else to invite — drop straight into our own seat, the way the
+      // old vs-AI button did. Deliberately leaves `busy` set: we're navigating
+      // away, and clearing it would flash the button back to enabled first.
+      if (humanCount === 1) {
+        window.location.href = g.invites['0'];
+        return;
+      }
       setGame(g);
       setReloadKey((k) => k + 1);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-    } finally {
       setBusy(false);
-    }
-  }
-
-  // Human (seat 0) vs a server-driven AI (seat 1). The AI is a rated leaderboard
-  // opponent, so a signed-in win/loss counts. We jump straight into seat 0.
-  async function onCreateVsAi(difficulty: string) {
-    setBusy(true);
-    setErr(null);
-    try {
-      const g = await createGame(2, { '1': difficulty });
-      rememberCreatedGame(g.gameId, g.invites);
-      window.location.href = g.invites['0'];
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
       setBusy(false);
@@ -68,25 +95,58 @@ export function Lobby() {
         ))}
       </div>
 
+      <div style={{ marginBottom: 12 }}>
+        {Array.from({ length: numPlayers }, (_, seat) => (
+          <div key={seat} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+            <span style={{ width: 110, color: '#aab', fontSize: 13 }}>
+              Seat {seat} ({COLOR_NAMES[seat]})
+            </span>
+            {seat === 0 ? (
+              <span style={{ ...mini, background: '#5a3380', color: 'white', cursor: 'default' }}>You</span>
+            ) : (
+              (['human', 'random', 'standard'] as SeatFill[]).map((fill) => (
+                <button
+                  key={fill}
+                  onClick={() => setSeatFill((m) => ({ ...m, [seat]: fill }))}
+                  style={{ ...mini, ...((seatFill[seat] ?? 'human') === fill ? { background: '#5a3380', color: 'white' } : {}) }}
+                >
+                  {SEAT_FILL_LABEL[fill]}
+                </button>
+              ))
+            )}
+          </div>
+        ))}
+      </div>
+
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         <button onClick={onCreate} disabled={busy} style={btn}>
-          {busy ? 'Creating…' : `New ${numPlayers}-player game`}
+          {busy
+            ? 'Creating…'
+            : botCount === 0
+              ? `New ${numPlayers}-player game`
+              : `New game · ${humanCount}H + ${botCount}AI`}
         </button>
-        <button onClick={() => onCreateVsAi('random')} disabled={busy} style={btn}>vs AI · easy</button>
-        <button onClick={() => onCreateVsAi('standard')} disabled={busy} style={btn}>vs AI · standard</button>
       </div>
       <p style={{ color: '#778', fontSize: 12 }}>
-        Playing vs AI is a 2-player game (you vs the bot). Sign in first so your
-        result counts on the leaderboard.
+        Bots take their turns on the server, so a table never stalls waiting on
+        an empty seat. Mixed games still count on the leaderboard — sign in
+        first so your result is recorded.
       </p>
       {err && <p style={{ color: '#f66' }}>{err}</p>}
 
       {game && (
         <div style={{ marginTop: 24 }}>
-          <p>Game <code>{game.gameId}</code> created. Share one link per seat:</p>
-          {(Object.keys(game.invites) as PlayerId[]).map((seat) => (
-            <InviteRow key={seat} seat={seat} url={game.invites[seat]} />
-          ))}
+          <p>
+            Game <code>{game.gameId}</code> created.{' '}
+            {createdBots.length > 0
+              ? `Seats ${createdBots.map((sd) => `${sd} (${COLOR_NAMES[Number(sd)]})`).join(', ')} are bots — send a link to each of the others:`
+              : 'Share one link per seat:'}
+          </p>
+          {(Object.keys(game.invites) as PlayerId[])
+            .filter((seat) => !createdBots.includes(seat))
+            .map((seat) => (
+              <InviteRow key={seat} seat={seat} url={game.invites[seat]} />
+            ))}
         </div>
       )}
 
