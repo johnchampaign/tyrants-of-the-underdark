@@ -1,0 +1,61 @@
+# Hands a bot the turns of anyone who has stopped playing.
+#
+# Async games die quietly: one player wanders off and everyone else is stuck on
+# a turn that never comes. server/sweep.ts fixes that — but only when something
+# calls it, and this project has nowhere to schedule from. Cloudflare Pages
+# Functions can't run on a timer, and the relay Worker has no cron triggers. So
+# the scheduler lives here.
+#
+# The endpoint is idempotent and takes no input: it only acts on seats that have
+# sat on a turn past the 7-day window, and a player who comes back simply resets
+# the clock. Running it twice, or not at all for a day, changes nothing.
+#
+# NOTE: GitHub disables scheduled workflows in a repository with no activity for
+# 60 days. If seats ever stop being taken over, check that this workflow is still
+# enabled before suspecting the sweep itself.
+name: Sweep abandoned seats
+
+on:
+  schedule:
+    # Daily. The window is a week, so the check only needs to be roughly daily —
+    # the cost of being a few hours late is a few hours, not a stuck game.
+    - cron: '17 3 * * *'
+  workflow_dispatch: {}
+
+# Never let two sweeps overlap: each one submits real moves.
+concurrency:
+  group: sweep-abandoned-seats
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hand abandoned seats to a bot
+        env:
+          # Override with a repo variable to point at a different deployment.
+          SITE: ${{ vars.TOTU_SITE_URL || 'https://tyrants-online.pages.dev' }}
+        run: |
+          set -uo pipefail
+          echo "Sweeping $SITE/api/sweep"
+          body=$(mktemp)
+          code=$(curl -sS -X POST "$SITE/api/sweep" \
+                   -H 'content-type: application/json' \
+                   --max-time 120 -o "$body" -w '%{http_code}') || {
+            echo "::error::sweep request failed to complete"; exit 1; }
+          echo "HTTP $code"
+          cat "$body"; echo
+          if [ "$code" != "200" ]; then
+            echo "::error::sweep returned HTTP $code"
+            exit 1
+          fi
+          # Surface the counts in the run summary so a silent no-op is
+          # distinguishable from the job simply not having run.
+          {
+            echo "### Abandoned-seat sweep"
+            echo ''
+            echo '```json'
+            cat "$body"
+            echo ''
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
