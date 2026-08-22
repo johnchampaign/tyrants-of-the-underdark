@@ -35,6 +35,19 @@ const WHITE_TOKEN = '#d0d0d0';
 // pixel-identical to a solid fill in every normal browser.
 const flat = (c: string) => `linear-gradient(${c}, ${c})`;
 
+// Neutral (Underdark) troops read as "white-ish circle" and an empty space reads
+// as "faint circle", which over pale board art left the two almost identical —
+// the only cue was a 1px dashed-vs-solid border (reported from BGG: "it's white
+// vs light gray"). The retail game has the same problem; we're deliberately not
+// copying it. A neutral token now carries a darker ring plus a small centre pip,
+// so it's distinguishable by SHAPE and not just by shade — which also survives
+// colour-blindness and the forced-dark-mode repaint this file already fights.
+const WHITE_TOKEN_RING = '#6b6b78';
+/** Centre pip, painted as a background layer so it can't be repainted away by
+ *  the browser's forced dark mode the way a solid child element could. */
+const NEUTRAL_PIP = `radial-gradient(circle at 50% 50%, ${WHITE_TOKEN_RING} 0 22%, transparent 23%)`;
+const neutralFill = () => `${NEUTRAL_PIP}, ${flat(WHITE_TOKEN)}`;
+
 const STORAGE_KEY = 'totu.site-positions';
 const SLOTS_STORAGE_KEY = 'totu.slot-positions';
 
@@ -407,10 +420,11 @@ export function MapView({ calibrate = false, editRoutes = false, G, clickableSit
                         title={`${s.name} — slot ${i + 1}${occ ? ` · ${occ}` : ''}`}
                         style={{
                           width: sz, height: sz, borderRadius: '50%',
-                          background: occ === 'white' ? flat(WHITE_TOKEN)
+                          background: occ === 'white' ? neutralFill()
                             : occ ? flat(COLOR_HEX[occ])
                             : 'transparent',
                           border: spClick ? '2px solid #ffcc44'
+                            : occ === 'white' ? `2px solid ${WHITE_TOKEN_RING}`
                             : occ === 'black' ? '2px solid #e6e1f2'
                             : occ ? '2px solid #fff'
                             : '1px dashed rgba(255,255,255,0.35)',
@@ -573,8 +587,11 @@ export function MapView({ calibrate = false, editRoutes = false, G, clickableSit
                 position: 'absolute', left: `${x * 100}%`, top: `${y * 100}%`,
                 width: size, height: size, marginLeft: -size/2, marginTop: -size/2,
                 borderRadius: '50%',
-                background: occ === 'white' ? flat(WHITE_TOKEN) : occ ? flat(COLOR_HEX[occ]) : 'rgba(20, 14, 40, 0.7)',
-                border: pickable ? '2px solid #ffcc44' : occ ? '1px solid #fff' : '1px solid rgba(255,255,255,0.3)',
+                background: occ === 'white' ? neutralFill() : occ ? flat(COLOR_HEX[occ]) : 'rgba(20, 14, 40, 0.7)',
+                border: pickable ? '2px solid #ffcc44'
+                  : occ === 'white' ? `2px solid ${WHITE_TOKEN_RING}`
+                  : occ ? '1px solid #fff'
+                  : '1px solid rgba(255,255,255,0.3)',
                 boxShadow: pickable ? '0 0 6px #ffcc44' : undefined,
                 cursor: pickable ? 'pointer' : 'default',
                 zIndex: 5,
@@ -697,10 +714,11 @@ export function MapView({ calibrate = false, editRoutes = false, G, clickableSit
                 width: size, height: size,
                 marginLeft: -size/2, marginTop: -size/2,
                 borderRadius: '50%',
-                background: occ === 'white' ? flat(WHITE_TOKEN)
+                background: occ === 'white' ? neutralFill()
                   : occ ? flat(COLOR_HEX[occ])
                   : 'transparent',
                 border: pickable ? '2px solid #ffcc44'
+                  : occ === 'white' ? `2px solid ${WHITE_TOKEN_RING}`
                   : occ === 'black' ? '2px solid #e6e1f2'
                   : occ ? '2px solid #fff'
                   : '1px dashed rgba(255,255,255,0.25)',

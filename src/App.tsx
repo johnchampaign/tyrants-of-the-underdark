@@ -10,6 +10,7 @@ import { SiteVerify } from './components/SiteVerify';
 import { SlotCalibration } from './components/SlotCalibration';
 import { SectionDividerCalibration } from './components/SectionDividerCalibration';
 import { MarkerCalibration } from './components/MarkerCalibration';
+import { HALF_DECKS, EXPANSION_HALF_DECKS, type HalfDeck } from './half-decks';
 import { GameLog } from './components/GameLog';
 import { GameTabLog } from './components/GameTabLog';
 import { CardLogText } from './components/CardLogText';
@@ -176,13 +177,7 @@ export function isSplitViewMode(): boolean {
 // ~2/3 of games to a competent human; truly hard would need deeper
 // lookahead or opponent-reply modeling.
 type AiStyle = 'random' | 'easy' | 'heuristic';
-type HalfDeck = 'drow' | 'dragons' | 'elemental' | 'demons' | 'aberrations' | 'undead';
-const HALF_DECKS: HalfDeck[] = ['drow', 'dragons', 'elemental', 'demons', 'aberrations', 'undead'];
-// Half-decks introduced in the Aberrations & Undead expansion. The new-game
-// dialog separates these from the base half-decks under an "Expansion" header
-// so unfamiliar players see clearly which decks are base-game and which need
-// the expansion. Game logic treats all six identically.
-const EXPANSION_HALF_DECKS: ReadonlySet<HalfDeck> = new Set(['aberrations', 'undead']);
+
 type ThirdPlayerSide = 'left' | 'right';
 interface GameConfig {
   numPlayers: number;
@@ -401,6 +396,10 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
   // new value with no reload.
   const [noImages, setNoImages] = useState<boolean>(isNoImagesMode);
   const [baseAction, setBaseAction] = useState<BaseAction>(null);
+  // Which opponent's spy to return, when a site holds more than one. Local UI
+  // state rather than an engine prompt: the returnEnemySpy move already takes a
+  // target colour, so the engine has nothing to decide.
+  const [spyPick, setSpyPick] = useState<{ siteId: string; colors: string[] } | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   // Which of the player's own card piles is open in the inspector overlay,
   // if any. Lets a player review what's in their deck / discard / inner
@@ -982,12 +981,16 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
     if (G.setupPhase && myTurn) { moves.deployStartingTroop(siteId); return; }
     if (humanSitePick) { moves.resolveChoice(siteId); return; }
     if (baseAction?.kind === 'return-spy') {
-      // Pick which enemy spy if multiple colors present at this site.
       const enemyColors = (G.spies[siteId] ?? []).filter(c => c !== p.color);
-      if (enemyColors.length > 0) {
-        // Just take the first for simplicity; could surface a sub-prompt if 2+.
+      if (enemyColors.length === 1) {
         moves.returnEnemySpy(siteId, enemyColors[0]);
         // Stay in return-spy mode; auto-cancelled by the power-watchdog effect.
+      } else if (enemyColors.length > 1) {
+        // Two opponents spying on the same site is a real decision — they
+        // belong to different people, and returning the wrong one can hand the
+        // site to whoever you were trying to block. This used to silently take
+        // the first colour in the array (reported from BGG).
+        setSpyPick({ siteId, colors: enemyColors });
       }
     }
   };
@@ -1157,6 +1160,33 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
       </div>
     );
   })();
+
+  // Whose spy? Shown when the clicked site holds spies from more than one
+  // opponent. Mirrors the engine's select-player prompt styling so the two
+  // routes to this action look the same.
+  const spyPickBar = spyPick ? (() => {
+    const siteName = SITES.find(s2 => s2.id === spyPick.siteId)?.name ?? spyPick.siteId;
+    return (
+      <div style={{ marginBottom: 8, padding: 10, background: '#3a2055', borderRadius: 4 }}>
+        <div style={{ fontWeight: 'bold', marginBottom: 6 }}>Return whose spy from {siteName}?</div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {spyPick.colors.map(c => {
+            const pid = Object.keys(G.players).find(k => G.players[k].color === c);
+            return (
+              <button key={c}
+                onClick={() => { moves.returnEnemySpy(spyPick.siteId, c as Color); setSpyPick(null); }}
+                style={{ padding: '6px 12px', background: '#5a3380', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}>
+                {pid ? playerColorLabel(G.players[pid].color, pid) : c}
+              </button>
+            );
+          })}
+        </div>
+        <button onClick={() => setSpyPick(null)} style={{ marginTop: 8, padding: '4px 12px', fontSize: 12 }}>
+          Cancel
+        </button>
+      </div>
+    );
+  })() : null;
 
   const actionBar = (
     <div style={{ marginTop: 16, display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -1821,7 +1851,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
               this the user has to flip back to the game tab to resolve each
               iteration of cards like Intellect Devourer that loop chooseOne
               under times(). */}
-          {interactivePromptBar}
+          {spyPickBar}{interactivePromptBar}
           {/* Action bar rendered ABOVE the map so it's reachable without
               scrolling past the (large) board image. Per user feedback —
               this is the bar most likely needed while looking at the map
@@ -1845,7 +1875,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
           clickableMarketSlots={clickableMarketSlots}
           humanMapPick={humanMapPick}
           actionBar={actionBar}
-          interactivePromptBar={interactivePromptBar}
+          interactivePromptBar={<>{spyPickBar}{interactivePromptBar}</>}
           mySeat={me}
           onViewPile={setPileView}
         />
@@ -1862,7 +1892,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
       {tab === 'markers' && <div style={{ marginTop: 16 }}><MarkerCalibration /></div>}
       {tab === 'log' && (
         <div style={{ marginTop: 16 }}>
-          {interactivePromptBar}
+          {spyPickBar}{interactivePromptBar}
           <GameLog G={G} onLoad={(codec) => moves.loadState(codec)} />
         </div>
       )}

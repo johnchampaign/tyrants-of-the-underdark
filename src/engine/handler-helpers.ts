@@ -1631,43 +1631,99 @@ export function returnEnemyTroopChoice(opts?: { includeWhite?: boolean }): Effec
 }
 
 /** Return an enemy spy from a site where you have presence (rulebook p.13). */
+/** "Return an enemy spy" — pick the site, then, when more than one opponent has
+ *  a spy there, pick WHOSE spy goes back.
+ *
+ *  That second question used to be answered with `arr.find(c => c !== me.color)`
+ *  — the first enemy colour in the array, silently. With two opponents spying on
+ *  the same site that is a real decision being made for the player (in-game
+ *  report from BGG), and often the whole point of the action: the two spies
+ *  belong to different people and returning the wrong one can hand the site to
+ *  the player you were trying to block.
+ *
+ *  The owner prompt reuses `select-player`, which already renders as coloured
+ *  per-player buttons and is already enumerated for the AI — so no new prompt
+ *  kind, UI, or adapter case. */
+interface ReturnSpyState { siteId?: string }
+
 export function returnEnemySpyChoice(): EffectHandler {
   return ctx => {
-    if (!ctx.pendingChoice) {
-      const me = ctx.G.players[ctx.actorId];
-      const eligible = SITES.filter(s => {
-        if (!hasPresence(ctx.G, me.color, { site: s.id })) return false;
-        return (ctx.G.spies[s.id] ?? []).some(c => c !== me.color);
-      }).map(s => s.id);
-      if (eligible.length === 0) {
-        Mechanics.log(ctx.G, '(return enemy spy: no enemy spies at any site where you have presence — skipped)');
-        return true;
-      }
-      ctx.pendingChoice = {
-        kind: 'select-site',
-        prompt: 'Return an enemy spy from which site?',
-        options: eligible,
-        optional: false,
-      } as PendingChoice;
-      ctx.paused = true;
-      return false;
-    }
-    const siteId = ctx.pendingChoice.response as string | null;
-    ctx.pendingChoice = null;
-    ctx.paused = false;
-    if (!siteId) return true;
+    const state = (ctx.handlerState as ReturnSpyState | null) ?? {};
     const me = ctx.G.players[ctx.actorId];
-    const arr = ctx.G.spies[siteId] ?? [];
-    const enemyColor = arr.find(c => c !== me.color);
-    if (enemyColor) {
-      if (returnSpy(ctx.G, enemyColor, siteId)) {
-        // The returned spy goes back to its owner's supply, not yours.
-        ensureSpiesLeftInitialized(ctx.G, enemyColor);
-        const ownerPid = Object.keys(ctx.G.players).find(k => ctx.G.players[k].color === enemyColor);
-        if (ownerPid) ctx.G.players[ownerPid].spiesLeft += 1;
-        Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} returned ${enemyColor} spy from ${siteId}`);
+
+    // ---- Stage 1: which site? ----
+    if (!state.siteId) {
+      if (!ctx.pendingChoice) {
+        const eligible = SITES.filter(s => {
+          if (!hasPresence(ctx.G, me.color, { site: s.id })) return false;
+          return (ctx.G.spies[s.id] ?? []).some(c => c !== me.color);
+        }).map(s => s.id);
+        if (eligible.length === 0) {
+          Mechanics.log(ctx.G, '(return enemy spy: no enemy spies at any site where you have presence — skipped)');
+          ctx.handlerState = null;
+          return true;
+        }
+        ctx.pendingChoice = {
+          kind: 'select-site',
+          prompt: 'Return an enemy spy from which site?',
+          options: eligible,
+          optional: false,
+        } as PendingChoice;
+        ctx.paused = true;
+        ctx.handlerState = {};
+        return false;
+      }
+      const picked = ctx.pendingChoice.response as string | null;
+      ctx.pendingChoice = null;
+      ctx.paused = false;
+      if (!picked) { ctx.handlerState = null; return true; }
+      state.siteId = picked;
+    }
+
+    const siteId = state.siteId;
+    const enemies = (ctx.G.spies[siteId] ?? []).filter(c => c !== me.color);
+    if (enemies.length === 0) { ctx.handlerState = null; return true; }
+
+    // ---- Stage 2: whose spy? Only asked when it's a real choice. ----
+    let targetColor = enemies[0];
+    if (enemies.length > 1) {
+      if (!ctx.pendingChoice) {
+        const owners = enemies
+          .map(c => Object.keys(ctx.G.players).find(k => ctx.G.players[k].color === c))
+          .filter((k): k is string => !!k);
+        // Colours with no seated owner can't be offered; if that leaves one
+        // real choice, just take it rather than prompting with a single button.
+        if (owners.length > 1) {
+          const siteName = SITES.find(s => s.id === siteId)?.name ?? siteId;
+          ctx.pendingChoice = {
+            kind: 'select-player',
+            prompt: `Return whose spy from ${siteName}?`,
+            options: owners,
+            optional: false,
+          } as PendingChoice;
+          ctx.paused = true;
+          ctx.handlerState = { siteId };
+          return false;
+        }
+      } else {
+        const pid = ctx.pendingChoice.response as string | null;
+        ctx.pendingChoice = null;
+        ctx.paused = false;
+        if (!pid) { ctx.handlerState = null; return true; }
+        const chosen = ctx.G.players[pid]?.color;
+        if (chosen && enemies.includes(chosen)) targetColor = chosen;
       }
     }
+
+    if (returnSpy(ctx.G, targetColor, siteId)) {
+      // The returned spy goes back to its owner's supply, not yours.
+      ensureSpiesLeftInitialized(ctx.G, targetColor);
+      const ownerPid = Object.keys(ctx.G.players).find(k => ctx.G.players[k].color === targetColor);
+      if (ownerPid) ctx.G.players[ownerPid].spiesLeft += 1;
+      Mechanics.log(ctx.G, `P${Number(ctx.actorId) + 1} returned ${targetColor} spy from ${siteId}`,
+        { kind: 'spy.return', payload: { site: siteId, target: targetColor }, side: ctx.actorId });
+    }
+    ctx.handlerState = null;
     return true;
   };
 }

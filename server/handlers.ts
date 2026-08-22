@@ -13,6 +13,8 @@ import type { Codec, PlayerController } from 'digital-boardgame-framework';
 import { sweepAbandonedSeats } from './sweep';
 import type { BgioState, TyrantsAction, PlayerId } from '../src/adapter/tyrantsAdapter';
 import { initialBgioState } from '../src/adapter/tyrantsAdapter';
+import { isHalfDeck } from '../src/half-decks';
+import { SELECTABLE_COLORS, type Color } from '../src/game';
 
 export interface ApiResult {
   status: number;
@@ -70,16 +72,41 @@ export async function handleApi(
       // (framework >=0.37). E.g. { numPlayers: 2, ai: { '1': 'random' } } makes a
       // human-vs-AI game: seat '0' is the human, seat '1' the AI.
       if (segs.length === 2 && method === 'POST') {
-        const b = (body ?? {}) as { numPlayers?: unknown; ai?: Partial<Record<PlayerId, string>> };
+        const b = (body ?? {}) as {
+          numPlayers?: unknown; ai?: Partial<Record<PlayerId, string>>;
+          halfDecks?: unknown; humanColor?: unknown;
+        };
         const raw = b.numPlayers;
         const numPlayers = Math.trunc(Number(raw ?? 2));
         if (!Number.isFinite(numPlayers) || numPlayers < 2 || numPlayers > 4) {
           return { status: 422, body: { error: 'numPlayers must be 2, 3, or 4' } };
         }
+        // Market half-decks. Until these were accepted here, every online game
+        // fell through to the engine default pair, so elemental / demons / the
+        // expansion decks had never been playable online at all.
+        const rawDecks = Array.isArray(b.halfDecks) ? b.halfDecks : undefined;
+        let halfDecks: string[] | undefined;
+        if (rawDecks) {
+          if (rawDecks.length !== 2 || !rawDecks.every(isHalfDeck) || rawDecks[0] === rawDecks[1]) {
+            return { status: 422, body: { error: 'halfDecks must be two different half-deck names' } };
+          }
+          halfDecks = rawDecks as string[];
+        }
+        // The creator's own colour (seat 0). Everyone else takes the classic
+        // four in seat order, exactly as solo/hotseat does.
+        let humanColor: Color | undefined;
+        if (b.humanColor !== undefined) {
+          if (typeof b.humanColor !== 'string' || !(SELECTABLE_COLORS as string[]).includes(b.humanColor)) {
+            return { status: 422, body: { error: 'humanColor is not a selectable colour' } };
+          }
+          humanColor = b.humanColor as Color;
+        }
         const players: PlayerId[] = Array.from({ length: numPlayers }, (_, i) => String(i));
         const r = await server.createGame({
           initialState: initialBgioState(numPlayers, {
             activeSections: activeSectionsFor(numPlayers),
+            ...(halfDecks ? { halfDecks } : {}),
+            ...(humanColor ? { humanColor } : {}),
           }),
           players,
           ...(b.ai ? { ai: b.ai } : {}),

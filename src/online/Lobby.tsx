@@ -3,6 +3,8 @@ import { useIdentity, Leaderboard, SignInBar } from 'digital-boardgame-framework
 import { createGame, fetchStatus, deleteGame, type Invites } from './client';
 import { listMyGames, rememberCreatedGame, forgetGame, type MyGame } from './myGames';
 import type { PlayerId } from '../adapter/tyrantsAdapter';
+import { HALF_DECKS, EXPANSION_HALF_DECKS, type HalfDeck } from '../half-decks';
+import { SELECTABLE_COLORS, type Color } from '../game';
 
 const COLOR_NAMES = ['Black', 'Red', 'Orange', 'Blue'];
 
@@ -23,6 +25,18 @@ export function Lobby() {
   // offered anything except "all human" and a fixed 1v1 vs-AI preset, which is
   // exactly what the feature request was about.
   const [seatFill, setSeatFill] = useState<Record<number, SeatFill>>({ 1: 'human', 2: 'human', 3: 'human' });
+  // Same setup choices the solo/hotseat dialog offers. Online had none of them:
+  // the create endpoint ignored decks entirely, so every online game was the
+  // default pair and nobody could play elemental or demons against a friend.
+  const [halfDecks, setHalfDecks] = useState<HalfDeck[]>(['drow', 'dragons']);
+  const [humanColor, setHumanColor] = useState<Color>(SELECTABLE_COLORS[0]);
+
+  // Keep the two most recent picks, so clicking a third swaps the older out
+  // rather than silently doing nothing.
+  const toggleDeck = (d: HalfDeck) =>
+    setHalfDecks(cur => cur.includes(d) ? cur.filter(x => x !== d) : [...cur, d].slice(-2));
+  const randomizeDecks = () =>
+    setHalfDecks([...HALF_DECKS].sort(() => Math.random() - 0.5).slice(0, 2));
   const [game, setGame] = useState<Invites | null>(null);
   // Which seats the CREATED game gave to bots. Kept separately from seatFill so
   // that fiddling with the pickers afterwards can't mislabel a live game's
@@ -51,7 +65,8 @@ export function Lobby() {
     setBusy(true);
     setErr(null);
     try {
-      const g = await createGame(numPlayers, botCount ? botSeats : undefined);
+      const g = await createGame(numPlayers, botCount ? botSeats : undefined,
+        { halfDecks, humanColor });
       rememberCreatedGame(g.gameId, g.invites);
       setCreatedBots(Object.keys(botSeats));
       // Nobody else to invite — drop straight into our own seat, the way the
@@ -118,8 +133,59 @@ export function Lobby() {
         ))}
       </div>
 
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ display: 'block', marginBottom: 4, opacity: 0.85, fontSize: 13 }}>Your colour</label>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {SELECTABLE_COLORS.map(c => (
+            <button key={c} onClick={() => setHumanColor(c)}
+              style={{ ...mini, textTransform: 'capitalize',
+                ...(humanColor === c ? { background: '#5a3380', color: 'white' } : {}) }}>
+              {c}
+            </button>
+          ))}
+        </div>
+        <div style={{ marginTop: 4, fontSize: 11, opacity: 0.55 }}>
+          The other seats take the classic colours in order.
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ display: 'block', marginBottom: 4, opacity: 0.85, fontSize: 13 }}>
+          Market half-decks (pick 2)
+          <span style={{ opacity: 0.5, fontSize: 11 }}> · {halfDecks.length}/2 selected</span>
+        </label>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+          {HALF_DECKS.filter(d => !EXPANSION_HALF_DECKS.has(d)).map(d => {
+            const idx = halfDecks.indexOf(d);
+            return (
+              <button key={d} onClick={() => toggleDeck(d)}
+                style={{ ...mini, ...(idx >= 0 ? { background: '#5a3380', color: 'white' } : {}) }}>
+                {d}{idx >= 0 && <span style={{ marginLeft: 6, opacity: 0.7 }}>#{idx + 1}</span>}
+              </button>
+            );
+          })}
+        </div>
+        <div style={{ fontSize: 11, opacity: 0.55, margin: '8px 0 4px' }}>
+          Aberrations &amp; Undead expansion:
+        </div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+          {HALF_DECKS.filter(d => EXPANSION_HALF_DECKS.has(d)).map(d => {
+            const idx = halfDecks.indexOf(d);
+            return (
+              <button key={d} onClick={() => toggleDeck(d)}
+                title="From the Aberrations & Undead expansion. Card-effect mechanics are still being wired in — some cards' special effects may be no-ops until that's complete."
+                style={{ ...mini, border: '1px dashed #6a4595',
+                  ...(idx >= 0 ? { background: '#5a3380', color: 'white' } : {}) }}>
+                {d}{idx >= 0 && <span style={{ marginLeft: 6, opacity: 0.7 }}>#{idx + 1}</span>}
+              </button>
+            );
+          })}
+        </div>
+        <button onClick={randomizeDecks} style={mini}>Random 2</button>
+      </div>
+
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-        <button onClick={onCreate} disabled={busy} style={btn}>
+        <button onClick={onCreate} disabled={busy || halfDecks.length !== 2} style={btn}>
           {busy
             ? 'Creating…'
             : botCount === 0

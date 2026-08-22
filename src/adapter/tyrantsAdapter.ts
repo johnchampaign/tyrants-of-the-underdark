@@ -105,7 +105,7 @@ function markOnline<T>(G: T): T {
   return G;
 }
 const onlineSetup = (
-  setupData?: { halfDecks?: string[]; activeSections?: Array<"left" | "center" | "right"> },
+  setupData?: { halfDecks?: string[]; activeSections?: Array<"left" | "center" | "right">; humanColor?: Color },
 ) => (sa: Parameters<NonNullable<typeof TyrantsGame.setup>>[0]) =>
   markOnline(TyrantsGame.setup!(sa, setupData));
 
@@ -123,7 +123,7 @@ function reducer(): AnyReducer {
  *  and the eventual server createGame. */
 export function initialBgioState(
   numPlayers: number,
-  setupData?: { halfDecks?: string[]; activeSections?: Array<'left' | 'center' | 'right'> },
+  setupData?: { halfDecks?: string[]; activeSections?: Array<'left' | 'center' | 'right'>; humanColor?: Color },
 ): BgioState {
   const wrapped = setupData
     ? { ...ONLINE_GAME, setup: onlineSetup(setupData) }
