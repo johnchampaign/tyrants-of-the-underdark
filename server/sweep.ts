@@ -34,8 +34,14 @@ export const ABANDON_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
 const TAKEOVER_DIFFICULTY = 'random';
 
 /** Cap the work one sweep will do, so a backlog can't blow a request budget.
- *  Anything left is picked up by the next sweep. */
-const MAX_GAMES_PER_SWEEP = 25;
+ *
+ *  This is a starvation risk as much as a budget one: listActiveGames() returns
+ *  rows in no defined order, so if there are more candidates than the cap, the
+ *  same ones may be visited every night and the rest never swept at all. At 25
+ *  a live sweep was returning scanned:25 — i.e. sitting exactly ON the cap, so
+ *  some games were already being missed. 100 candidates costs roughly ten
+ *  seconds (one snapshot read each) against the cron's 120s allowance. */
+const MAX_GAMES_PER_SWEEP = 100;
 const MAX_MOVES_PER_SEAT = 40;
 
 /** Stored snapshots carry a `v<N>:` schema prefix that the server strips on
