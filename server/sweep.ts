@@ -33,15 +33,23 @@ export const ABANDON_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
  *  remaining players' game. */
 const TAKEOVER_DIFFICULTY = 'random';
 
-/** Cap the work one sweep will do, so a backlog can't blow a request budget.
- *
- *  This is a starvation risk as much as a budget one: listActiveGames() returns
- *  rows in no defined order, so if there are more candidates than the cap, the
- *  same ones may be visited every night and the rest never swept at all. At 25
- *  a live sweep was returning scanned:25 — i.e. sitting exactly ON the cap, so
- *  some games were already being missed. 100 candidates costs roughly ten
- *  seconds (one snapshot read each) against the cron's 120s allowance. */
+/** Hard backstop on candidates per run. The real limiter is the time budget
+ *  below — this just stops a pathological list from being walked at all. */
 const MAX_GAMES_PER_SWEEP = 100;
+
+/** Wall-clock budget for the scanning phase.
+ *
+ *  Counting alone is the wrong limiter, and measuring proved it: 25 candidates
+ *  returned in ~2.5s, so 100 "should" have been ~10s — it timed out past 100s
+ *  instead. Each candidate costs a snapshot read (hundreds of KB), plus a
+ *  metadata write for any game whose clock isn't started yet, and those don't
+ *  scale the way a first sample suggests.
+ *
+ *  So: stop on the clock, not on a count. Whatever is left is picked up by the
+ *  next run — the window is a week and the cron is daily, so there is plenty of
+ *  slack. The cron allows 120s; this leaves ample headroom under it. */
+const SWEEP_BUDGET_MS = 20_000;
+
 const MAX_MOVES_PER_SEAT = 40;
 
 /** Stored snapshots carry a `v<N>:` schema prefix that the server strips on
@@ -113,6 +121,10 @@ export interface SweepResult {
   errored: number;
   /** Rows that belong to another game on the shared store, left untouched. */
   skippedForeign: number;
+  /** True when the time budget ran out before every candidate was looked at.
+   *  Not an error — the remainder is picked up by the next run — but it's the
+   *  signal to watch if takeovers ever seem slow. */
+  ranOutOfTime?: boolean;
 }
 
 /** A seat is human unless the framework recorded it as one of its own AI seats.
@@ -148,7 +160,21 @@ export async function sweepAbandonedSeats(opts: {
   // every sweep and never reaches ours.
   const candidates = allGames.filter(looksLikeTyrantsMeta);
   out.skippedForeign += allGames.length - candidates.length;
-  for (const meta of candidates.slice(0, MAX_GAMES_PER_SWEEP)) {
+
+  // Spend the budget where it can actually do something. listActiveGames()
+  // returns rows in no defined order, so without this the same arbitrary slice
+  // gets visited every night and a genuinely abandoned game further down the
+  // list is never reached. Most-overdue first; games with no clock yet go last,
+  // since all they can do this run is have one started.
+  const overdueFirst = [...candidates].sort((a, b) => {
+    const at = a.reminder ? new Date(a.reminder.since).getTime() : Infinity;
+    const bt = b.reminder ? new Date(b.reminder.since).getTime() : Infinity;
+    return at - bt;
+  });
+
+  const startedAt = Date.now();
+  for (const meta of overdueFirst.slice(0, MAX_GAMES_PER_SWEEP)) {
+    if (Date.now() - startedAt > SWEEP_BUDGET_MS) { out.ranOutOfTime = true; break; }
     out.scanned++;
     try {
       const latest = await opts.store.getLatest(meta.gameId);
