@@ -414,6 +414,12 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
   // "Play all basic": when true, the driver effect auto-plays non-interactive
   // hand cards one at a time until none remain (#66).
   const [playingAll, setPlayingAll] = useState(false);
+  // After the final score, let players go back and look at the board. Tyrants
+  // stays close until the last turn, and half the fun afterwards is comparing
+  // how each strategy filled the map — but the game-over screen used to replace
+  // the whole board, so the moment you could finally discuss it was the moment
+  // it disappeared.
+  const [reviewingBoard, setReviewingBoard] = useState(false);
   // Auto-captured screenshot for the bug report. Grabbed BEFORE the dialog
   // mounts so it shows the actual game state, not the modal overlay.
   const [reportScreenshot, setReportScreenshot] = useState<string | null>(null);
@@ -1188,6 +1194,19 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
     );
   })() : null;
 
+  // Shown instead of the action bar once the game is over and the player has
+  // stepped back into the board to look around.
+  const reviewBanner = (ctx.gameover && reviewingBoard) ? (
+    <div style={{ marginTop: 16, padding: 10, background: '#3a2055', borderRadius: 4,
+      display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+      <span style={{ fontWeight: 'bold' }}>Game over — this is the final board.</span>
+      <button onClick={() => setReviewingBoard(false)}
+        style={{ padding: '6px 12px', background: '#5a3380', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
+        ← Back to results
+      </button>
+    </div>
+  ) : null;
+
   const actionBar = (
     <div style={{ marginTop: 16, display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
       {actionBtn(deployLabel, canDeploy, baseAction?.kind === 'deploy',
@@ -1200,13 +1219,24 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
       {(() => {
         const canPlayAll = myTurn && !G.pendingChoice && !G.setupPhase && basicPlayIdx != null;
         const active = canPlayAll && !playingAll;
+        // While it's running the button becomes STOP. Once started there was no
+        // way to interrupt it, which is how a player ended up auto-playing a
+        // card whose cost is "devour a card from your hand" with nothing left to
+        // devour — and online there's no undo to walk it back. Stopping only
+        // ends the run; cards already played stay played.
         return (
           <button
-            onClick={() => setPlayingAll(true)}
-            disabled={!active}
-            title="Play every hand card whose effect needs no decision (e.g. resource cards), one after another. Stops when only cards that require a choice remain."
-            style={{ padding: '8px 16px', background: active ? '#2a4a30' : '#2a2a2a', color: active ? 'white' : '#777', border: 'none', borderRadius: 4, cursor: active ? 'pointer' : 'not-allowed', marginLeft: 'auto' }}>
-            {playingAll ? 'Playing…' : '▶▶ Play all basic'}
+            onClick={() => setPlayingAll(p => !p)}
+            disabled={!active && !playingAll}
+            title={playingAll
+              ? 'Stop after the card currently being played. Cards already played stay played.'
+              : 'Play every hand card whose effect needs no decision (e.g. resource cards), one after another. Stops when only cards that require a choice remain.'}
+            style={{ padding: '8px 16px',
+              background: playingAll ? '#5a2a2a' : active ? '#2a4a30' : '#2a2a2a',
+              color: (active || playingAll) ? 'white' : '#777',
+              border: 'none', borderRadius: 4,
+              cursor: (active || playingAll) ? 'pointer' : 'not-allowed', marginLeft: 'auto' }}>
+            {playingAll ? '■ Stop' : '▶▶ Play all basic'}
           </button>
         );
       })()}
@@ -1377,13 +1407,19 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
   })();
 
   // End-of-game scoreboard.
-  if (ctx.gameover) {
+  if (ctx.gameover && !reviewingBoard) {
     const scores = scoreAll(G);
     const ranked = Object.entries(scores).sort((a, b) => b[1].total - a[1].total);
     const winner = ranked[0];
     return (
       <div style={{ padding: 24, maxWidth: 900, margin: '0 auto' }}>
         <h1 style={{ margin: 0 }}>Game Over</h1>
+        <button onClick={() => setReviewingBoard(true)}
+          title="Go back to the finished board — the map, the log and every pile, exactly as the game ended."
+          style={{ marginTop: 10, padding: '8px 16px', background: '#3a2055', color: '#e6e1f2',
+            border: '1px solid #5a3380', borderRadius: 4, cursor: 'pointer' }}>
+          View the final board →
+        </button>
         <div style={{ marginTop: 8, fontSize: 18 }}>
           Winner: <b>P{Number(winner[0]) + 1} ({G.players[winner[0]].color})</b> — {winner[1].total} VP
         </div>
@@ -1858,7 +1894,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
               (Cancel sticky base-actions, Assassinate / Deploy / Return
               Spy / End Turn). Kept inside the map-tab block so the bar
               only shows when relevant. */}
-          {actionBar}
+          {reviewBanner}{actionBar}
           <MapView G={G}
             clickableSites={startingClickable} onSiteClick={handleSiteClick}
             highlightSites={highlightSites}
@@ -1874,7 +1910,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
           clickableSpaces={clickableSpaces} handleSpaceClick={handleSpaceClick}
           clickableMarketSlots={clickableMarketSlots}
           humanMapPick={humanMapPick}
-          actionBar={actionBar}
+          actionBar={<>{reviewBanner}{actionBar}</>}
           interactivePromptBar={<>{spyPickBar}{interactivePromptBar}</>}
           mySeat={me}
           onViewPile={setPileView}
@@ -1975,7 +2011,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
           </>
         )}
 
-        {actionBar}
+        {reviewBanner}{actionBar}
 
         {G.pendingChoice?.kind === 'select-card-in-discard' && G.pendingChoice.playerId === me && (
           <>

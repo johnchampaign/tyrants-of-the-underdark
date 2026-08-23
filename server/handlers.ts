@@ -74,7 +74,7 @@ export async function handleApi(
       if (segs.length === 2 && method === 'POST') {
         const b = (body ?? {}) as {
           numPlayers?: unknown; ai?: Partial<Record<PlayerId, string>>;
-          halfDecks?: unknown; humanColor?: unknown;
+          halfDecks?: unknown; humanColor?: unknown; seatColors?: unknown;
         };
         const raw = b.numPlayers;
         const numPlayers = Math.trunc(Number(raw ?? 2));
@@ -101,12 +101,28 @@ export async function handleApi(
           }
           humanColor = b.humanColor as Color;
         }
+        // Explicit colour per seat. The host picks for the whole table — two
+        // seats sharing a colour would make the board unreadable, so duplicates
+        // are refused rather than silently deduped.
+        let seatColors: Color[] | undefined;
+        if (b.seatColors !== undefined) {
+          const raw = b.seatColors;
+          if (!Array.isArray(raw) || raw.length !== numPlayers
+            || !raw.every(c => typeof c === 'string' && (SELECTABLE_COLORS as string[]).includes(c))) {
+            return { status: 422, body: { error: `seatColors must be ${numPlayers} selectable colours` } };
+          }
+          if (new Set(raw as string[]).size !== raw.length) {
+            return { status: 422, body: { error: 'seatColors must all be different' } };
+          }
+          seatColors = raw as Color[];
+        }
         const players: PlayerId[] = Array.from({ length: numPlayers }, (_, i) => String(i));
         const r = await server.createGame({
           initialState: initialBgioState(numPlayers, {
             activeSections: activeSectionsFor(numPlayers),
             ...(halfDecks ? { halfDecks } : {}),
             ...(humanColor ? { humanColor } : {}),
+            ...(seatColors ? { seatColors } : {}),
           }),
           players,
           ...(b.ai ? { ai: b.ai } : {}),

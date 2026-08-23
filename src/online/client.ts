@@ -158,7 +158,7 @@ export interface Invites {
 export async function createGame(
   numPlayers: number,
   ai?: Partial<Record<PlayerId, string>>,
-  setup?: { halfDecks?: string[]; humanColor?: string },
+  setup?: { halfDecks?: string[]; humanColor?: string; seatColors?: string[] },
 ): Promise<Invites> {
   // Routed through apiJson so a transient blip (empty body / SPA-fallback HTML
   // during a cold-start or mid-deploy) is retried instead of failing instantly

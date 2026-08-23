@@ -8,6 +8,13 @@ import { SELECTABLE_COLORS, type Color } from '../game';
 
 const COLOR_NAMES = ['Black', 'Red', 'Orange', 'Blue'];
 
+/** Swatch fills for the seat colour picker. Same hexes the map paints tokens
+ *  with, so what you choose in the lobby is what you see on the board. */
+const COLOR_SWATCH: Record<string, string> = {
+  black: '#1a1a1a', red: '#c43c3c', orange: '#e08a2e', blue: '#3473b8',
+  purple: '#7d4bc3', green: '#3f9e4d', teal: '#2f9c96', pink: '#d4649c', yellow: '#d9c134',
+};
+
 /** What occupies a seat at creation time. 'human' means an invite link; any
  *  other value is a difficulty key from the server's AI controllers. */
 type SeatFill = 'human' | 'random' | 'standard';
@@ -29,7 +36,22 @@ export function Lobby() {
   // the create endpoint ignored decks entirely, so every online game was the
   // default pair and nobody could play elemental or demons against a friend.
   const [halfDecks, setHalfDecks] = useState<HalfDeck[]>(['drow', 'dragons']);
-  const [humanColor, setHumanColor] = useState<Color>(SELECTABLE_COLORS[0]);
+  // A colour per seat, not just your own: the host sets up the whole table, and
+  // a player who finds one colour hard to read against the board (dark grey map
+  // areas vs black) shouldn't have to be the one who ends up on it.
+  const [seatColors, setSeatColors] = useState<Color[]>(['black', 'red', 'orange', 'blue']);
+
+  /** Give `seat` this colour, swapping with whichever seat already had it so the
+   *  table never ends up with two seats sharing one. */
+  const assignColor = (seat: number, color: Color) =>
+    setSeatColors(cur => {
+      const next = [...cur];
+      const held = next.indexOf(color);
+      if (held === seat) return cur;
+      if (held >= 0) next[held] = next[seat];
+      next[seat] = color;
+      return next;
+    });
 
   // Keep the two most recent picks, so clicking a third swaps the older out
   // rather than silently doing nothing.
@@ -43,6 +65,9 @@ export function Lobby() {
   // invite list. Bot seats get a token from the server like everyone else, but
   // there is nobody to send it to.
   const [createdBots, setCreatedBots] = useState<string[]>([]);
+  /** Colours the CREATED game used — kept apart from the live picker so fiddling
+   *  with it afterwards can't relabel a game that is already running. */
+  const [createdColors, setCreatedColors] = useState<Color[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -66,9 +91,10 @@ export function Lobby() {
     setErr(null);
     try {
       const g = await createGame(numPlayers, botCount ? botSeats : undefined,
-        { halfDecks, humanColor });
+        { halfDecks, seatColors: seatColors.slice(0, numPlayers) });
       rememberCreatedGame(g.gameId, g.invites);
       setCreatedBots(Object.keys(botSeats));
+      setCreatedColors(seatColors.slice(0, numPlayers));
       // Nobody else to invite — drop straight into our own seat, the way the
       // old vs-AI button did. Deliberately leaves `busy` set: we're navigating
       // away, and clearing it would flash the button back to enabled first.
@@ -114,7 +140,7 @@ export function Lobby() {
         {Array.from({ length: numPlayers }, (_, seat) => (
           <div key={seat} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
             <span style={{ width: 110, color: '#aab', fontSize: 13 }}>
-              Seat {seat} ({COLOR_NAMES[seat]})
+              Seat {seat} ({seatColors[seat] ?? COLOR_NAMES[seat]})
             </span>
             {seat === 0 ? (
               <span style={{ ...mini, background: '#5a3380', color: 'white', cursor: 'default' }}>You</span>
@@ -129,24 +155,20 @@ export function Lobby() {
                 </button>
               ))
             )}
+            <span style={{ marginLeft: 10, display: 'inline-flex', gap: 3 }}>
+              {SELECTABLE_COLORS.map(c => (
+                <button key={c} onClick={() => assignColor(seat, c)}
+                  title={`Seat ${seat}: ${c}`}
+                  style={{
+                    width: 18, height: 18, padding: 0, borderRadius: '50%', cursor: 'pointer',
+                    background: COLOR_SWATCH[c] ?? c,
+                    border: seatColors[seat] === c ? '2px solid #e6e1f2' : '1px solid #3a2055',
+                    boxShadow: seatColors[seat] === c ? '0 0 4px #b69cff' : undefined,
+                  }} />
+              ))}
+            </span>
           </div>
         ))}
-      </div>
-
-      <div style={{ marginBottom: 12 }}>
-        <label style={{ display: 'block', marginBottom: 4, opacity: 0.85, fontSize: 13 }}>Your colour</label>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {SELECTABLE_COLORS.map(c => (
-            <button key={c} onClick={() => setHumanColor(c)}
-              style={{ ...mini, textTransform: 'capitalize',
-                ...(humanColor === c ? { background: '#5a3380', color: 'white' } : {}) }}>
-              {c}
-            </button>
-          ))}
-        </div>
-        <div style={{ marginTop: 4, fontSize: 11, opacity: 0.55 }}>
-          The other seats take the classic colours in order.
-        </div>
       </div>
 
       <div style={{ marginBottom: 12 }}>
@@ -205,7 +227,7 @@ export function Lobby() {
           <p>
             Game <code>{game.gameId}</code> created.{' '}
             {createdBots.length > 0
-              ? `Seats ${createdBots.map((sd) => `${sd} (${COLOR_NAMES[Number(sd)]})`).join(', ')} are bots — send a link to each of the others:`
+              ? `Seats ${createdBots.map((sd) => `${sd} (${createdColors[Number(sd)] ?? COLOR_NAMES[Number(sd)]})`).join(', ')} are bots — send a link to each of the others:`
               : 'Share one link per seat:'}
           </p>
           {(Object.keys(game.invites) as PlayerId[])

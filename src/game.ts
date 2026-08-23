@@ -465,7 +465,7 @@ export const TyrantsGame: Game<TyrantsState> = {
     return undefined;
   },
 
-  setup: ({ ctx, random }, setupData?: { halfDecks?: string[]; activeSections?: Array<'left'|'center'|'right'>; humanColor?: Color }) => {
+  setup: ({ ctx, random }, setupData?: { halfDecks?: string[]; activeSections?: Array<'left'|'center'|'right'>; humanColor?: Color; seatColors?: Color[] }) => {
     const rng = () => random!.Number();
     const halfDecks = setupData?.halfDecks?.length === 2 ? setupData.halfDecks : ['drow', 'dragons'];
     // Rulebook p.5: limit the board to the sections in play. 2P = center only,
@@ -490,9 +490,19 @@ export const TyrantsGame: Game<TyrantsState> = {
     // Seat → colour. The human is always seat 0; if they picked a colour, put
     // it first and let the AI seats take the remaining colours in order. No
     // pick → the default seat order (black, red, orange, blue).
-    const colorOrder: Color[] = setupData?.humanColor
-      ? [setupData.humanColor, ...COLORS.filter(c => c !== setupData.humanColor)]
-      : COLORS;
+    // Seat colours. `seatColors` sets every seat explicitly (online table setup,
+    // where the host picks for the whole table so nobody ends up on a colour
+    // that's hard to pick out against the board); `humanColor` is the older
+    // solo/hotseat form that only chooses seat 0's. Any seat left uncovered
+    // falls back to the classic four, skipping colours already handed out so a
+    // partial list can't produce two seats of the same colour.
+    const explicit = setupData?.seatColors ?? (setupData?.humanColor ? [setupData.humanColor] : []);
+    const colorOrder: Color[] = [];
+    const taken = new Set<Color>(explicit.slice(0, ctx.numPlayers));
+    const spare = COLORS.filter(c => !taken.has(c));
+    for (let i = 0; i < ctx.numPlayers; i++) {
+      colorOrder.push(explicit[i] ?? spare.shift() ?? COLORS[i % COLORS.length]);
+    }
     const players: Record<string, PlayerData> = {};
     for (let i = 0; i < ctx.numPlayers; i++) {
       const deck = shuffle(startingDeck(), rng);

@@ -63,6 +63,18 @@ try {
     else pass(`the other seat takes a classic colour (${G.players['1'].color})`);
   }
 
+  // ---- every seat's colour can be set, not just the host's ----
+  {
+    const r = await create({ numPlayers: 4, seatColors: ['teal', 'yellow', 'pink', 'green'] });
+    if (r.status !== 200) { fail(`create rejected valid seatColors: ${JSON.stringify(r.body)}`); }
+    else {
+      const G = (await stateOf((r.body as { gameId: string }).gameId)).G;
+      const got = ['0', '1', '2', '3'].map(p => G.players[p].color);
+      if (got.join(',') !== 'teal,yellow,pink,green') fail(`seat colours came out as ${got.join(',')}`);
+      else pass(`every seat gets the colour the host chose (${got.join(', ')})`);
+    }
+  }
+
   // ---- omitting setup still works (existing clients) ----
   {
     const r = await create({ numPlayers: 2 });
@@ -79,6 +91,9 @@ try {
     ['the same deck twice', { numPlayers: 2, halfDecks: ['drow', 'drow'] }],
     ['a deck that does not exist', { numPlayers: 2, halfDecks: ['drow', 'wyverns'] }],
     ['a colour that is not selectable', { numPlayers: 2, humanColor: 'chartreuse' }],
+    // Two seats on one colour would make the board unreadable.
+    ['two seats sharing a colour', { numPlayers: 2, seatColors: ['red', 'red'] }],
+    ['seatColors of the wrong length', { numPlayers: 4, seatColors: ['red', 'blue'] }],
   ] as Array<[string, unknown]>) {
     const r = await create(body);
     if (r.status !== 422) fail(`${label} was accepted (HTTP ${r.status}) instead of refused`);
