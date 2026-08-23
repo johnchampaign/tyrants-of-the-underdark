@@ -115,6 +115,7 @@ const CONFIG_KEY = 'totu.gameconfig';
 const DEV_KEY = 'totu.dev-mode';
 const NO_IMAGES_KEY = 'totu.no-images';
 const SPLIT_VIEW_KEY = 'totu.split-view';
+const SKIP_SUMMARIES_KEY = 'totu.skip-turn-summaries';
 
 // Bulk "Upload logs": archived games already uploaded successfully are recorded
 // here (by their IndexedDB id) so later uploads skip them instead of re-sending
@@ -166,6 +167,20 @@ export function isNoImagesMode(): boolean {
  *  the map." Off by default; the existing game/map tabs stay unchanged. */
 export function isSplitViewMode(): boolean {
   return readUrlBoolFlag('split-view', SPLIT_VIEW_KEY);
+}
+
+/** Skip the between-turns summary (?skip-summaries=1 / =0). The modal exists so
+ *  you can see what happened while you weren't looking, but against AI seats
+ *  that's a click after every single opponent turn, and by mid-game a lot of
+ *  players stop reading it. Requested on the forum: "would it be possible to
+ *  add option (toggle on/off) to skip the AI bot log actions... sometimes I
+ *  don't care what they do."
+ *
+ *  Nothing is lost when it's on — the same lines are in the log tab, and each
+ *  turn is still listed under the Log tab's per-turn breakdown. Off by default:
+ *  online it's the only way to see a remote opponent's turn at all. */
+export function isSkipSummariesMode(): boolean {
+  return readUrlBoolFlag('skip-summaries', SKIP_SUMMARIES_KEY);
 }
 
 // Difficulty tiers exposed in the new-game dialog. 'easy' is the same
@@ -387,6 +402,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
   // to the game-selection dialog). Initialized from localStorage; the
   // toggle button below writes both state and storage in lockstep.
   const [splitView, setSplitView] = useState<boolean>(isSplitViewMode);
+  const [skipSummaries, setSkipSummaries] = useState<boolean>(isSkipSummariesMode);
   // No-images mode as React state so the toggle can flip it WITHOUT a page
   // reload. The old toggle called window.location.reload(), which ran the
   // resume-from-save path and (via loadState keeping the fresh-mount snapshots)
@@ -671,8 +687,17 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
     }
     return -1;
   })();
-  const pendingAiSummary = pendingAiSummaryIdx >= 0 ? G.turnLogs[pendingAiSummaryIdx] : null;
+  const pendingAiSummary = (pendingAiSummaryIdx >= 0 && !skipSummaries)
+    ? G.turnLogs[pendingAiSummaryIdx] : null;
   const showingModal = !!pendingAiSummary;
+
+  // While skipping, keep the counter moving past each opponent turn as it
+  // completes. Suppressing the modal without advancing would bank a backlog and
+  // dump every skipped turn on the player the moment they switched it back on.
+  useEffect(() => {
+    if (!skipSummaries || pendingAiSummaryIdx < 0) return;
+    setShownTurnLogCount(pendingAiSummaryIdx + 1);
+  }, [skipSummaries, pendingAiSummaryIdx]);
 
   // Reducer + template state for the heuristic AI's 1-ply / turn-end lookahead,
   // ALSO used by the "Play all basic" dry-run (basicPlayIdx below).
@@ -1579,6 +1604,17 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
           title="Toggle split-view mode. Adds a 'play' tab that shows the map and your hand+market on the same page, with hover-to-expand. The original game/map tabs stay available."
           style={{ padding: '6px 14px', background: splitView ? '#5a3380' : 'transparent', color: '#e6e1f2', border: '1px solid #3a2055', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}>
           {splitView ? '📐 split view on' : '📐 split view off'}
+        </button>
+        <button onClick={() => {
+          setSkipSummaries(prev => {
+            const next = !prev;
+            try { localStorage.setItem(SKIP_SUMMARIES_KEY, next ? '1' : '0'); } catch { /* ignore */ }
+            return next;
+          });
+        }}
+          title="Skip the between-turns summary popup. Nothing is lost — every line is still in the Log tab, turn by turn. Leave it on in online games if you want to see what your opponent did."
+          style={{ padding: '6px 14px', background: skipSummaries ? '#5a3380' : 'transparent', color: '#e6e1f2', border: '1px solid #3a2055', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}>
+          {skipSummaries ? '⏭ turn popups off' : '⏭ turn popups on'}
         </button>
         {/* Log upload targets the worker /game-log relay, which does not exist on
             the online (Cloudflare Pages) deploy — so it always fails online. Online
