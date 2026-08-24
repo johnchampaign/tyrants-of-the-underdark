@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { PLAYER_COLOR_HEX, WHITE_TOKEN_HEX } from '../player-colors';
 import { SITES, type Site } from '../data/sites';
 import { ROUTES, type Route } from '../data/routes';
 import { sitesSpaces } from '../data/troop-spaces';
@@ -10,22 +11,8 @@ import { loadSectionDividers } from './SectionDividerCalibration';
 import { loadMarkerPositions } from './MarkerCalibration';
 import { hasTotalControl } from '../engine/map-state';
 
-const COLOR_HEX: Record<Color, string> = {
-  // Lifted toward grey so tokens contrast against near-black site boxes.
-  black: '#4a4a4a',
-  red: '#c2362e',
-  orange: '#d97a1d',
-  blue: '#2b53b0',
-  // Extra colours human players may pick — chosen to stay distinct from each
-  // other and from the canonical four against the dark board.
-  purple: '#9b5de5',
-  green: '#3fa34d',
-  teal: '#1fb6b0',
-  pink: '#e36bb0',
-  yellow: '#d9c520',
-};
-// White tokens darkened toward light grey so they stand out on white-bordered site boxes.
-const WHITE_TOKEN = '#d0d0d0';
+const COLOR_HEX = PLAYER_COLOR_HEX;
+const WHITE_TOKEN = WHITE_TOKEN_HEX;
 
 // Samsung Internet / Chrome Android "Website dark mode" repaints solid
 // background-COLORS but leaves background-IMAGES (gradients) alone. Painting a

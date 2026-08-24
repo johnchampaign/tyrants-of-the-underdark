@@ -5,15 +5,11 @@ import { listMyGames, rememberCreatedGame, forgetGame, type MyGame } from './myG
 import type { PlayerId } from '../adapter/tyrantsAdapter';
 import { HALF_DECKS, EXPANSION_HALF_DECKS, type HalfDeck } from '../half-decks';
 import { SELECTABLE_COLORS, type Color } from '../game';
+import { colorHex } from '../player-colors';
 
 const COLOR_NAMES = ['Black', 'Red', 'Orange', 'Blue'];
 
-/** Swatch fills for the seat colour picker. Same hexes the map paints tokens
- *  with, so what you choose in the lobby is what you see on the board. */
-const COLOR_SWATCH: Record<string, string> = {
-  black: '#1a1a1a', red: '#c43c3c', orange: '#e08a2e', blue: '#3473b8',
-  purple: '#7d4bc3', green: '#3f9e4d', teal: '#2f9c96', pink: '#d4649c', yellow: '#d9c134',
-};
+
 
 /** What occupies a seat at creation time. 'human' means an invite link; any
  *  other value is a difficulty key from the server's AI controllers. */
@@ -161,7 +157,7 @@ export function Lobby() {
                   title={`Seat ${seat}: ${c}`}
                   style={{
                     width: 18, height: 18, padding: 0, borderRadius: '50%', cursor: 'pointer',
-                    background: COLOR_SWATCH[c] ?? c,
+                    background: colorHex(c),
                     border: seatColors[seat] === c ? '2px solid #e6e1f2' : '1px solid #3a2055',
                     boxShadow: seatColors[seat] === c ? '0 0 4px #b69cff' : undefined,
                   }} />
@@ -233,7 +229,7 @@ export function Lobby() {
           {(Object.keys(game.invites) as PlayerId[])
             .filter((seat) => !createdBots.includes(seat))
             .map((seat) => (
-              <InviteRow key={seat} seat={seat} url={game.invites[seat]} />
+              <InviteRow key={seat} seat={seat} url={game.invites[seat]} color={createdColors[Number(seat)]} />
             ))}
         </div>
       )}
@@ -325,9 +321,15 @@ function MoreGames() {
   );
 }
 
-function seatLabel(seat: PlayerId): string {
+/** Label a seat. `color` is the colour that seat ACTUALLY has — pass it wherever
+ *  it's known. Naming seats after the classic four regardless of what was
+ *  chosen is confusing when you're about to hand someone their link (reported
+ *  from BGG: "seat names seem to be hardcoded with old (default) colors"); the
+ *  positional fallback is only for the resume list, where the game's colours
+ *  aren't in hand. */
+function seatLabel(seat: PlayerId, color?: string): string {
   const i = Number(seat);
-  return `Seat ${seat} (${COLOR_NAMES[i] ?? seat})`;
+  return `Seat ${seat} (${color ?? COLOR_NAMES[i] ?? seat})`;
 }
 
 function GamesInProgress({ reloadKey }: { reloadKey: number }) {
@@ -399,11 +401,11 @@ function GamesInProgress({ reloadKey }: { reloadKey: number }) {
   );
 }
 
-function InviteRow({ seat, url }: { seat: PlayerId; url: string }) {
+function InviteRow({ seat, url, color }: { seat: PlayerId; url: string; color?: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '8px 0' }}>
-      <strong style={{ width: 140 }}>{seatLabel(seat)}</strong>
+      <strong style={{ width: 140 }}>{seatLabel(seat, color)}</strong>
       <a href={url} style={{ color: '#6cf', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {url}
       </a>

@@ -11,6 +11,7 @@ import { SlotCalibration } from './components/SlotCalibration';
 import { SectionDividerCalibration } from './components/SectionDividerCalibration';
 import { MarkerCalibration } from './components/MarkerCalibration';
 import { HALF_DECKS, EXPANSION_HALF_DECKS, type HalfDeck } from './half-decks';
+import { colorHex, WHITE_TOKEN_HEX } from './player-colors';
 import { GameLog } from './components/GameLog';
 import { GameTabLog } from './components/GameTabLog';
 import { CardLogText } from './components/CardLogText';
@@ -421,7 +422,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
   // if any. Lets a player review what's in their deck / discard / inner
   // circle for planning (#68). The deck is shown UNORDERED (sorted by
   // deck+slot) so it isn't a peek at draw order.
-  const [pileView, setPileView] = useState<'deck' | 'discard' | 'inner' | 'trophy' | 'played' | null>(null);
+  const [pileView, setPileView] = useState<'deck' | 'discard' | 'inner' | 'trophy' | 'played' | 'devoured' | null>(null);
   // Which player's pile the overlay is showing. null = the local viewer (me).
   // Opponents' discard / inner circle / trophy hall are public info, so any
   // player can be inspected from the scoreboard (#82, Drew W.). Deck and hand
@@ -1378,6 +1379,42 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
         </div>
       );
     }
+    if (pileView === 'devoured') {
+      // Shared pile, and ORDER matters: cards are pushed as they're devoured,
+      // so the last one is the top — which is the one a card like Ghost lets
+      // you take. Show it top-first and say which it is, rather than sorting
+      // like the private piles (requested on BGG: the stack should be visible
+      // even before you're able to use such an effect).
+      const pile = [...(G.devouredPile ?? [])].reverse();
+      return (
+        <div onClick={() => setPileView(null)}
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            width: '100vw', height: '100dvh', background: 'rgba(0,0,0,0.7)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 1000, padding: 20,
+          }}>
+          <div onClick={(e) => e.stopPropagation()}
+            style={{ background: '#1a1228', borderRadius: 8, padding: 16, maxWidth: '90vw', maxHeight: '85vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 4 }}>
+              <h2 style={{ margin: 0, fontSize: 18 }}>Devoured pile ({pile.length})</h2>
+              <button onClick={() => setPileView(null)} style={{ marginLeft: 'auto', padding: '4px 12px' }}>Close</button>
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 10 }}>
+              Cards removed from the game. Listed top of the pile first — the top card is
+              the one that effects which recruit from the devoured pile can take.
+            </div>
+            {pile.length === 0
+              ? <div style={{ opacity: 0.6 }}>Nothing has been devoured yet.</div>
+              : <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {pile.map((c, i) => (
+                    <Card key={i} card={c} label={i === 0 ? 'top of pile' : undefined} dim={i > 0} />
+                  ))}
+                </div>}
+          </div>
+        </div>
+      );
+    }
     const cards = pileView === 'deck' ? pp.deck
       : pileView === 'discard' ? pp.discard
       : pileView === 'played' ? pp.cardsPlayed
@@ -1483,7 +1520,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
               const cell = (val: number | string, tip: string) => (
                 <td title={tip} style={{ cursor: 'help' }}>{val}</td>
               );
-              const COLOR_HEX: Record<string, string> = { black: '#1a1a1a', red: '#c43c3c', orange: '#e08a2e', blue: '#3473b8', white: '#d0d0d0' };
+
               const trophiesCell = (
                 <td title={trophiesTip} style={{ cursor: 'help' }}>
                   <div>{s.trophies}</div>
@@ -1501,7 +1538,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
                             width: 8, height: 8, borderRadius: '50%',
                             // Flat gradient so Samsung/Chrome forced dark mode
                             // leaves this colour-coded trophy dot as authored.
-                            background: `linear-gradient(${COLOR_HEX[c] ?? '#888'}, ${COLOR_HEX[c] ?? '#888'})`,
+                            background: `linear-gradient(${c === 'white' ? WHITE_TOKEN_HEX : colorHex(c)}, ${c === 'white' ? WHITE_TOKEN_HEX : colorHex(c)})`,
                             border: c === 'black' ? '1px solid #555' : 'none',
                           }} />
                           {n}
@@ -1815,8 +1852,15 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
                     background: isCurrent ? 'rgba(255,204,68,0.10)' : 'transparent',
                   }}>
                     <ColorSwatch color={pl.color} />
-                    <span style={{ minWidth: 78, opacity: 0.9 }}>
+                    <span style={{ minWidth: 92, opacity: 0.9 }}>
                       P{Number(pid) + 1}{isViewer ? ' (you)' : ''}
+                      {/* Who went first decides who gets the last turn of the
+                          final round, which matters for the end-game race —
+                          and it was nowhere on screen once setup scrolled past. */}
+                      {pid === G.firstPlayerId && (
+                        <span title="Went first this game — so they also take the last turn of the final round."
+                          style={{ marginLeft: 4, color: '#ffcc44', fontWeight: 700 }}>①</span>
+                      )}
                     </span>
                     <span style={{ color: '#ffcc44' }}>{pl.vp} VP</span>
                     <span style={{ opacity: 0.55 }}>·</span>
@@ -2134,7 +2178,38 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
         </div>
 
         <h2 style={{ marginTop: 24 }}>
-          Market <span style={{ fontSize: 13, opacity: 0.7, fontWeight: 'normal' }}>· {G.market.deck.length} cards left in deck</span>
+          Market
+          {(G.devouredPile?.length ?? 0) > 0 && (
+            <button onClick={() => setPileView('devoured')}
+              title="View the devoured pile — cards removed from the game. Some cards let you recruit the top one."
+              style={{
+                marginLeft: 10, background: 'none', border: 'none', padding: 0,
+                font: 'inherit', fontSize: 13, fontWeight: 'normal',
+                color: '#9ecbff', cursor: 'pointer', textDecoration: 'underline',
+              }}>
+              devoured: {G.devouredPile!.length}
+            </button>
+          )}
+          {(() => {
+            // The market running dry is one of the two end-game triggers, but it
+            // read as quiet grey trivia right up until it fired. Mirror the
+            // barracks treatment and make the last stretch look like the warning
+            // it is (requested on BGG).
+            const left = G.market.deck.length;
+            const low = left <= 10;
+            return (
+              <span
+                title={low
+                  ? `Only ${left} cards left in the market deck — when it empties, the game enters its final round.`
+                  : 'Cards left in the market deck. When it empties, the game enters its final round.'}
+                style={{
+                  fontSize: 13, fontWeight: low ? 700 : 'normal',
+                  opacity: low ? 1 : 0.7, color: low ? '#ff9d6c' : undefined, marginLeft: 6,
+                }}>
+                · {left} cards left in deck
+              </span>
+            );
+          })()}
         </h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
           {/* Rotating market row (6 slots from the chosen half-decks). */}

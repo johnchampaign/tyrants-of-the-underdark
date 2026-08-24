@@ -11,15 +11,38 @@ interface Props {
   onLoad: (codec: string) => void;
 }
 
+type TurnLog = TyrantsState['turnLogs'][number];
+type Snapshot = TyrantsState['snapshots'][number];
+
 export function GameLog({ G, onLoad }: Props) {
   const [pasted, setPasted] = useState('');
   const [expandedTurn, setExpandedTurn] = useState<number | null>(null);
+  // Rewind needs snapshots, which redaction strips online. No snapshots at all
+  // means the whole load-a-codec affordance is meaningless here, so hide it
+  // rather than offering a box that can never do anything.
+  const canRewind = G.snapshots.length > 0;
 
-  // Pair each snapshot with its matching turn's log lines (if completed).
-  const entries = G.snapshots.map(s => ({
-    snapshot: s,
-    log: G.turnLogs.find(t => t.turn === s.turn),
-  })).slice().reverse();
+  // List the UNION of turns we know about, from either source.
+  //
+  // Neither alone is enough. Snapshots are stripped from every online view by
+  // redactState (they're full state codecs, so they'd leak hidden information),
+  // so keying on them made this tab permanently empty online — the one place
+  // you could review what an opponent did said "no turns recorded yet" forever
+  // (reported from BGG: "you are not able to review what happened prior your
+  // turn once you click OK"). But turnLogs isn't enough either: the local save
+  // codec peels it, so after a page reload a hotseat game has snapshots and no
+  // prose, and keying on turnLogs would drop the rewind controls entirely.
+  //
+  // So: take every turn either side knows about. Prose shows when there is
+  // prose; the codec buttons show when there is a snapshot.
+  const byTurn = new Map<number, { turn: number; log?: TurnLog; snapshot?: Snapshot }>();
+  for (const log of G.turnLogs) byTurn.set(log.turn, { turn: log.turn, log });
+  for (const snapshot of G.snapshots) {
+    const at = byTurn.get(snapshot.turn);
+    if (at) at.snapshot = snapshot;
+    else byTurn.set(snapshot.turn, { turn: snapshot.turn, snapshot });
+  }
+  const entries = [...byTurn.values()].sort((a, b) => b.turn - a.turn);
 
   function copy(text: string) {
     navigator.clipboard.writeText(text);
@@ -45,12 +68,12 @@ export function GameLog({ G, onLoad }: Props) {
   return (
     <div style={{ padding: 8 }}>
       <div style={{ marginBottom: 12, fontSize: 12, opacity: 0.85 }}>
-        Each entry below is one turn. The codec is a base64 snapshot of the game at that
-        turn's start. Copy a codec, then paste into the box below and click <b>Load</b> to
-        rewind to that state. Newest turns first.
+        Each entry below is one turn — click one to read what happened. Newest turns first.
+        {canRewind && <> The codec is a base64 snapshot of the game at that turn's start:
+        copy one, paste it into the box below and click <b>Load</b> to rewind to that state.</>}
       </div>
 
-      <div style={{ marginBottom: 16, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+      {canRewind && <div style={{ marginBottom: 16, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
         <textarea
           value={pasted}
           onChange={e => setPasted(e.target.value)}
@@ -70,7 +93,7 @@ export function GameLog({ G, onLoad }: Props) {
         >
           Load state
         </button>
-      </div>
+      </div>}
 
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
         <div style={{ fontSize: 12, opacity: 0.7, flex: 1 }}>
@@ -83,44 +106,46 @@ export function GameLog({ G, onLoad }: Props) {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {entries.map(({ snapshot, log }) => {
-          const isOpen = expandedTurn === snapshot.turn;
+        {entries.map(({ turn, snapshot, log }) => {
+          const isOpen = expandedTurn === turn;
+          const who = log ?? snapshot;
           return (
-            <div key={snapshot.turn} style={{ background: '#1a1228', borderRadius: 4, padding: 8 }}>
+            <div key={turn} style={{ background: '#1a1228', borderRadius: 4, padding: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span
-                  onClick={() => setExpandedTurn(isOpen ? null : snapshot.turn)}
+                  onClick={() => setExpandedTurn(isOpen ? null : turn)}
                   style={{ cursor: 'pointer', fontSize: 13, flex: 1 }}>
-                  {isOpen ? '▾' : '▸'} Turn {snapshot.turn} · P{Number(snapshot.playerId) + 1} ({snapshot.color})
+                  {isOpen ? '▾' : '▸'} Turn {turn}
+                  {who && <> · P{Number(who.playerId) + 1} ({who.color})</>}
                   {log && <span style={{ opacity: 0.6, marginLeft: 8, fontSize: 11 }}>· {log.lines.length} actions</span>}
                 </span>
-                <button onClick={() => copy(snapshot.codec)} style={{ fontSize: 11, padding: '2px 8px' }}>
-                  Copy codec
-                </button>
-                <button onClick={() => { if (confirm(`Load turn ${snapshot.turn}? Current progress replaced.`)) onLoad(snapshot.codec); }}
-                  style={{ fontSize: 11, padding: '2px 8px', background: '#3a2055', color: '#fff', border: 'none', borderRadius: 3 }}>
-                  Load
-                </button>
+                {snapshot && <>
+                  <button onClick={() => copy(snapshot.codec)} style={{ fontSize: 11, padding: '2px 8px' }}>
+                    Copy codec
+                  </button>
+                  <button onClick={() => { if (confirm(`Load turn ${snapshot.turn}? Current progress replaced.`)) onLoad(snapshot.codec); }}
+                    style={{ fontSize: 11, padding: '2px 8px', background: '#3a2055', color: '#fff', border: 'none', borderRadius: 3 }}>
+                    Load
+                  </button>
+                </>}
               </div>
               {isOpen && (
                 <div style={{ marginTop: 8, fontSize: 12 }}>
-                  {log ? (
-                    <>
-                      <div style={{ opacity: 0.7, marginBottom: 4 }}>Actions during this turn:</div>
-                      {log.lines.length === 0
-                        ? <div style={{ opacity: 0.5 }}>(no actions logged)</div>
-                        : log.lines.map((l, i) => <div key={i} style={{ padding: '1px 0', opacity: 0.9 }}><CardLogText line={l} /></div>)
-                      }
-                    </>
-                  ) : (
-                    <div style={{ opacity: 0.5 }}>(turn in progress)</div>
+                  {log ? (<>
+                    <div style={{ opacity: 0.7, marginBottom: 4 }}>Actions during this turn:</div>
+                    {log.lines.length === 0
+                      ? <div style={{ opacity: 0.5 }}>(no actions logged)</div>
+                      : log.lines.map((l, i) => <div key={i} style={{ padding: '1px 0', opacity: 0.9 }}><CardLogText line={l} /></div>)
+                    }
+                  </>) : (
+                    <div style={{ opacity: 0.5 }}>(turn in progress, or its actions were not kept in this saved game)</div>
                   )}
-                  <details style={{ marginTop: 6 }}>
+                  {snapshot && <details style={{ marginTop: 6 }}>
                     <summary style={{ cursor: 'pointer', fontSize: 11, opacity: 0.6 }}>codec ({snapshot.codec.length} chars)</summary>
                     <pre style={{ marginTop: 4, padding: 6, background: '#0c0814', borderRadius: 3, fontSize: 10, wordBreak: 'break-all', whiteSpace: 'pre-wrap' }}>
                       {snapshot.codec}
                     </pre>
-                  </details>
+                  </details>}
                 </div>
               )}
             </div>
