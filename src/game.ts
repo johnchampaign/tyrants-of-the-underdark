@@ -590,7 +590,17 @@ export const TyrantsGame: Game<TyrantsState> = {
 
   turn: {
     minMoves: 0,
-    maxMoves: 50,
+    // NO maxMoves. boardgame.io's maxMoves force-ends the turn the instant
+    // ctx.numMoves hits the cap, from *outside* our move handlers — so it
+    // sails straight past the `if (G.pendingChoice) return INVALID_MOVE`
+    // guard in endTurn and past the eot-promote picker. We used to cap at 50,
+    // which a long human turn can genuinely reach (every prompt click is a
+    // move, and "Load turn"/undo replays keep counting on the same ctx). When
+    // it fired on the move that raised the mandatory end-of-turn promote
+    // prompt, the turn advanced to the next seat with that prompt still
+    // standing — nobody could answer it and the game was stuck (report #106).
+    // Turns here always end explicitly via the endTurn move; a move cap buys
+    // us nothing and every AI/sim driver carries its own iteration bound.
     // Randomize who acts first. The seat order beyond that is the default
     // sequential cycle (0 → 1 → ... → N-1 → 0). G.firstPlayerId is picked once
     // in setup and persists through the game.
@@ -668,6 +678,19 @@ export const TyrantsGame: Game<TyrantsState> = {
       }
     },
     onEnd: ({ G, ctx, random }) => {
+      // Safety net: no legitimate path ends a turn with a prompt outstanding —
+      // the endTurn move refuses while G.pendingChoice is set, and the eot
+      // promote loop only calls events.endTurn() once it has cleared the
+      // prompt. But if anything ever force-ends a turn from outside our move
+      // handlers, an orphaned prompt belongs to a seat that is no longer
+      // acting, so nobody can answer it and the game locks up (report #106).
+      // Drop it here so a forced end degrades into a lost prompt rather than a
+      // dead game.
+      if (G.pendingChoice) {
+        Mechanics.log(G, '(turn ended with an unanswered prompt — prompt discarded)');
+        G.pendingChoice = null;
+        G.pausedHandlerState = null;
+      }
       // Capture this turn's log slice for the per-turn summary modal. We do this for
       // every turn (including setup deploys) so the human can review what happened.
       const lines = G.log.filter(e => typeof e !== 'string' && e.seq >= G.turnLogStart).map(logLineText);
