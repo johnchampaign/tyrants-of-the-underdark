@@ -1065,7 +1065,13 @@ export const TyrantsGame: Game<TyrantsState> = {
      *  does NOT end, because the point is for the seat to keep playing so the
      *  remaining players can finish. */
     forfeitSeat: ({ G }, seat: string) => {
-      if (G.setupPhase) return INVALID_MOVE;
+      // Deliberately NOT gated on setupPhase. A table where someone joined and
+      // then never placed their starting troop is the single most common way a
+      // game dies, and it's exactly what this exists for — the others are stuck
+      // before the game has even begun. The old guard made the sweep throw
+      // "That move isn't legal right now" on every such game, every run, so
+      // they were never rescued and the errors were never explained. The flag
+      // is only a scoring marker; nothing about it depends on setup being over.
       if (!G.players[seat]) return INVALID_MOVE;
       if (!G.forfeitedSeats) G.forfeitedSeats = [];
       if (G.forfeitedSeats.includes(seat)) return; // idempotent — sweeps repeat

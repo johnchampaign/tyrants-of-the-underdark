@@ -167,6 +167,68 @@ try {
     else if (sneaky?.reminder) fail('the sweep wrote its clock onto a numerically-seated foreign game');
     else pass('a foreign game with numeric seats is still rejected by the state-shape gate');
   }
+  // ---- 6. a brand-new game still gets its clock started ----
+  // Ordering most-overdue-first puts never-seen games at the back of the queue.
+  // With a shared store full of other people's games that queue is long, and
+  // the time budget was running out before reaching them — so a new game's
+  // clock never started, it could never become overdue, and it could never be
+  // swept. The sweep would report success every night and quietly not cover
+  // exactly the newest games.
+  {
+    // A pile of already-tracked games to push the new one to the back.
+    for (let i = 0; i < 12; i++) {
+      const filler = `filler-${i}`;
+      await server.createGame({ initialState: initialBgioState(2, { activeSections: ['center'] }),
+        players: ['0', '1'] as PlayerId[] });
+      void filler;
+    }
+    // Sweep once so all of those have clocks and sort ahead of anything new.
+    await sweep(T0 + ABANDON_AFTER_MS * 4);
+
+    const { gameId: freshId } = await server.createGame({
+      initialState: initialBgioState(2, { activeSections: ['center'] }),
+      players: ['0', '1'] as PlayerId[],
+    });
+    const before = await store.getGameMeta(freshId);
+    if (before?.reminder) fail('the new game already had a clock — fixture is wrong');
+
+    const s6 = await sweep(T0 + ABANDON_AFTER_MS * 5);
+    const after = await store.getGameMeta(freshId);
+    if (!after?.reminder) {
+      fail('a newly created game got no clock — it can never become overdue, so it can never be swept');
+    } else {
+      pass(`a newly created game gets its clock started (${s6.clocksStarted} started this run)`);
+    }
+  }
+
+  // ---- 7. a table abandoned during SETUP is rescued, not skipped ----
+  // Someone joins, never places their starting troop, and the others are stuck
+  // before the game has even begun — the most common way a game dies. forfeitSeat
+  // used to refuse while setupPhase was true, so the sweep threw "That move
+  // isn't legal right now" on every such game on every run: never rescued, and
+  // the errors never explained (this is what production's steady errored:3 was).
+  {
+    const { gameId: stuckId } = await server.createGame({
+      initialState: initialBgioState(2, { activeSections: ['center'] }),
+      players: ['0', '1'] as PlayerId[],
+    });
+    const stuck = codec.decode !== undefined
+      ? readState((await store.getLatest(stuckId))!.state) : null;
+    if (!stuck?.G.setupPhase) fail('fixture: expected a fresh game to still be in setup');
+
+    await sweep(T0 + ABANDON_AFTER_MS * 6);           // starts its clock
+    const s7 = await sweep(T0 + ABANDON_AFTER_MS * 14); // now overdue
+
+    if (s7.errored > 0) {
+      fail(`sweep errored on a game still in setup: ${s7.sampleError ?? '(no detail)'}`);
+    } else pass('a table abandoned during setup does not error the sweep');
+
+    const after = readState((await store.getLatest(stuckId))!.state);
+    if (!(after.G.forfeitedSeats ?? []).length) {
+      fail('nobody was forfeited on a table abandoned during setup — it stays stuck forever');
+    } else pass('a seat abandoned during setup is forfeited so the table can proceed');
+  }
+
 } finally {
   rmSync(root, { recursive: true, force: true });
 }

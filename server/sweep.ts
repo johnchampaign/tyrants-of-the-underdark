@@ -50,6 +50,19 @@ const MAX_GAMES_PER_SWEEP = 100;
  *  slack. The cron allows 120s; this leaves ample headroom under it. */
 const SWEEP_BUDGET_MS = 20_000;
 
+/** Slice of that budget held back for games with no clock yet.
+ *
+ *  Ordering most-overdue-first is right for deciding who to ACT on, but it puts
+ *  games that have never been seen at the very back — and the budget was
+ *  reliably running out before reaching them. A game whose clock never starts
+ *  can never become overdue, so it could never be swept at all: the feature
+ *  would quietly not apply to exactly the newest games, forever, while the
+ *  sweep reported success every night.
+ *
+ *  So the two jobs get separate money. Starting a clock is cheap (one read, one
+ *  small write), so a few seconds covers a lot of new games. */
+const CLOCK_START_RESERVE_MS = 6_000;
+
 const MAX_MOVES_PER_SEAT = 40;
 
 /** Stored snapshots carry a `v<N>:` schema prefix that the server strips on
@@ -121,6 +134,11 @@ export interface SweepResult {
   errored: number;
   /** Rows that belong to another game on the shared store, left untouched. */
   skippedForeign: number;
+  /** Clocks started on games seen for the first time this run. */
+  clocksStarted: number;
+  /** First error text seen, if any — the per-game catch keeps the sweep alive,
+   *  but without this the reason only ever reached a log nobody reads. */
+  sampleError?: string;
   /** True when the time budget ran out before every candidate was looked at.
    *  Not an error — the remainder is picked up by the next run — but it's the
    *  signal to watch if takeovers ever seem slow. */
@@ -145,7 +163,7 @@ export async function sweepAbandonedSeats(opts: {
 }): Promise<SweepResult> {
   const olderThanMs = opts.olderThanMs ?? ABANDON_AFTER_MS;
   const now = opts.nowMs ?? Date.now();
-  const out: SweepResult = { scanned: 0, forfeited: 0, movesPlayed: 0, errored: 0, skippedForeign: 0 };
+  const out: SweepResult = { scanned: 0, forfeited: 0, movesPlayed: 0, errored: 0, skippedForeign: 0, clocksStarted: 0 };
 
   // NB: deliberately NOT server.sweepTurnReminders(). It iterates the same
   // unscoped listActiveGames(), decodes every row with OUR adapter, and marks a
@@ -161,20 +179,34 @@ export async function sweepAbandonedSeats(opts: {
   const candidates = allGames.filter(looksLikeTyrantsMeta);
   out.skippedForeign += allGames.length - candidates.length;
 
-  // Spend the budget where it can actually do something. listActiveGames()
-  // returns rows in no defined order, so without this the same arbitrary slice
-  // gets visited every night and a genuinely abandoned game further down the
-  // list is never reached. Most-overdue first; games with no clock yet go last,
-  // since all they can do this run is have one started.
-  const overdueFirst = [...candidates].sort((a, b) => {
-    const at = a.reminder ? new Date(a.reminder.since).getTime() : Infinity;
-    const bt = b.reminder ? new Date(b.reminder.since).getTime() : Infinity;
-    return at - bt;
-  });
+  // Two jobs, and they compete: acting on games that are already overdue, and
+  // starting the clock on games we've never seen. Sorting purely by staleness
+  // starves the second — see CLOCK_START_RESERVE_MS. Split the list, and give
+  // each its own share of the budget.
+  const started: GameMeta[] = [];
+  const unseen: GameMeta[] = [];
+  for (const m of candidates) (m.reminder ? started : unseen).push(m);
+  // Most overdue first among those we're tracking.
+  started.sort((a, b) =>
+    new Date(a.reminder!.since).getTime() - new Date(b.reminder!.since).getTime());
+  // Oldest games first among the unseen, so a game can't be perpetually
+  // leapfrogged by newer ones.
+  unseen.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   const startedAt = Date.now();
-  for (const meta of overdueFirst.slice(0, MAX_GAMES_PER_SWEEP)) {
-    if (Date.now() - startedAt > SWEEP_BUDGET_MS) { out.ranOutOfTime = true; break; }
+  // Overdue games get everything except the reserve; unseen games get the rest.
+  const order = [
+    ...started.map(m => ({ meta: m, deadline: SWEEP_BUDGET_MS - CLOCK_START_RESERVE_MS })),
+    ...unseen.map(m => ({ meta: m, deadline: SWEEP_BUDGET_MS })),
+  ];
+  for (const { meta, deadline } of order.slice(0, MAX_GAMES_PER_SWEEP)) {
+    if (Date.now() - startedAt > deadline) {
+      out.ranOutOfTime = true;
+      // Out of time for the overdue pass only — keep going into the unseen
+      // ones, which is the whole point of the reserve.
+      if (deadline !== SWEEP_BUDGET_MS) continue;
+      break;
+    }
     out.scanned++;
     try {
       const latest = await opts.store.getLatest(meta.gameId);
@@ -192,6 +224,7 @@ export async function sweepAbandonedSeats(opts: {
           ...meta,
           reminder: { turn: latest.turn, since: new Date(now).toISOString(), sent: r?.sent ?? false },
         });
+        if (!r) out.clocksStarted++;
         continue;
       }
       if (now - new Date(r.since).getTime() < olderThanMs) continue;
@@ -236,6 +269,7 @@ export async function sweepAbandonedSeats(opts: {
       }
     } catch (e) {
       out.errored++;
+      if (!out.sampleError) out.sampleError = `${meta.gameId}: ${e instanceof Error ? e.message : String(e)}`.slice(0, 200);
       // A single bad game must never abort the sweep for everyone else.
       // eslint-disable-next-line no-console
       console.error(`[sweep] ${meta.gameId}:`, e);
