@@ -1233,6 +1233,48 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
     </div>
   ) : null;
 
+  // The market heading's two extras — the devoured-pile link and the low-deck
+  // warning — went into the game tab only, and split view has its own market
+  // header, so neither appeared there (reported from BGG). Build it once and
+  // hand it to both. Writing the rules a second time is exactly what produced
+  // the custom-colour bug a day ago.
+  const marketHeading = (
+    <>
+          Market
+          {(G.devouredPile?.length ?? 0) > 0 && (
+            <button onClick={() => setPileView('devoured')}
+              title="View the devoured pile — cards removed from the game. Some cards let you recruit the top one."
+              style={{
+                marginLeft: 10, background: 'none', border: 'none', padding: 0,
+                font: 'inherit', fontSize: 13, fontWeight: 'normal',
+                color: '#9ecbff', cursor: 'pointer', textDecoration: 'underline',
+              }}>
+              devoured: {G.devouredPile!.length}
+            </button>
+          )}
+          {(() => {
+            // The market running dry is one of the two end-game triggers, but it
+            // read as quiet grey trivia right up until it fired. Mirror the
+            // barracks treatment and make the last stretch look like the warning
+            // it is (requested on BGG).
+            const left = G.market.deck.length;
+            const low = left <= 10;
+            return (
+              <span
+                title={low
+                  ? `Only ${left} cards left in the market deck — when it empties, the game enters its final round.`
+                  : 'Cards left in the market deck. When it empties, the game enters its final round.'}
+                style={{
+                  fontSize: 13, fontWeight: low ? 700 : 'normal',
+                  opacity: low ? 1 : 0.7, color: low ? '#ff9d6c' : undefined, marginLeft: 6,
+                }}>
+                · {left} cards left in deck
+              </span>
+            );
+          })()}
+    </>
+  );
+
   const actionBar = (
     <div style={{ marginTop: 16, display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
       {actionBtn(deployLabel, canDeploy, baseAction?.kind === 'deploy',
@@ -1989,6 +2031,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
           highlightSites={highlightSites}
           clickableSpaces={clickableSpaces} handleSpaceClick={handleSpaceClick}
           clickableMarketSlots={clickableMarketSlots}
+          marketHeading={marketHeading}
           humanMapPick={humanMapPick}
           actionBar={<>{reviewBanner}{actionBar}</>}
           interactivePromptBar={<>{spyPickBar}{interactivePromptBar}</>}
@@ -2177,40 +2220,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
           })}
         </div>
 
-        <h2 style={{ marginTop: 24 }}>
-          Market
-          {(G.devouredPile?.length ?? 0) > 0 && (
-            <button onClick={() => setPileView('devoured')}
-              title="View the devoured pile — cards removed from the game. Some cards let you recruit the top one."
-              style={{
-                marginLeft: 10, background: 'none', border: 'none', padding: 0,
-                font: 'inherit', fontSize: 13, fontWeight: 'normal',
-                color: '#9ecbff', cursor: 'pointer', textDecoration: 'underline',
-              }}>
-              devoured: {G.devouredPile!.length}
-            </button>
-          )}
-          {(() => {
-            // The market running dry is one of the two end-game triggers, but it
-            // read as quiet grey trivia right up until it fired. Mirror the
-            // barracks treatment and make the last stretch look like the warning
-            // it is (requested on BGG).
-            const left = G.market.deck.length;
-            const low = left <= 10;
-            return (
-              <span
-                title={low
-                  ? `Only ${left} cards left in the market deck — when it empties, the game enters its final round.`
-                  : 'Cards left in the market deck. When it empties, the game enters its final round.'}
-                style={{
-                  fontSize: 13, fontWeight: low ? 700 : 'normal',
-                  opacity: low ? 1 : 0.7, color: low ? '#ff9d6c' : undefined, marginLeft: 6,
-                }}>
-                · {left} cards left in deck
-              </span>
-            );
-          })()}
-        </h2>
+        <h2 style={{ marginTop: 24 }}>{marketHeading}</h2>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
           {/* Rotating market row (6 slots from the chosen half-decks). */}
           {G.market.row.map((c, i) => {
@@ -2588,6 +2598,8 @@ function SplitPlayView(props: {
   clickableSpaces: Set<string> | undefined;
   handleSpaceClick: (spaceId: string) => void;
   clickableMarketSlots: Set<number> | null | undefined;
+  /** Built by Board so both layouts show the same devoured link + low-deck warning. */
+  marketHeading: React.ReactNode;
   humanMapPick: { prompt: string; optional?: boolean; highlight?: string[] } | null;
   actionBar: React.ReactNode;
   interactivePromptBar: React.ReactNode;
@@ -2599,7 +2611,7 @@ function SplitPlayView(props: {
 }) {
   const { G, myTurn, p, moves, playCardSafe,
           startingClickable, handleSiteClick, highlightSites, clickableSpaces, handleSpaceClick,
-          clickableMarketSlots, humanMapPick, actionBar, interactivePromptBar,
+          clickableMarketSlots, humanMapPick, actionBar, interactivePromptBar, marketHeading,
           mySeat: me, onViewPile } = props;
   const [focus, setFocus] = useState<'map' | 'cards' | null>(null);
 
@@ -2761,9 +2773,7 @@ function SplitPlayView(props: {
             </div>
           </div>
           <div style={{ flex: '2 1 480px', minWidth: 360 }}>
-            <h3 style={{ margin: '0 0 6px', fontSize: 14, opacity: 0.85 }}>
-              Market <span style={{ opacity: 0.6, fontWeight: 'normal' }}>· {G.market.deck.length} left in deck</span>
-            </h3>
+            <h3 style={{ margin: '0 0 6px', fontSize: 14, opacity: 0.85 }}>{marketHeading}</h3>
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
               {G.market.row.map((c, i) => {
                 if (!c) return <div key={i} style={{ width: 120, height: 168, margin: 4, border: '1px dashed #444', borderRadius: 8 }} />;
