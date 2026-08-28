@@ -50,7 +50,22 @@ const MAX_GAMES_PER_SWEEP = 100;
  *  slack. The cron allows 120s; this leaves ample headroom under it. */
 const SWEEP_BUDGET_MS = 20_000;
 
-/** Slice of that budget held back for games with no clock yet.
+/** The limit that actually binds: Cloudflare caps the number of outbound
+ *  requests ("subrequests") a single Worker invocation may make — 50 on the
+ *  current plan. Every store read or write counts.
+ *
+ *  This was invisible until the sweep started reporting its own error text.
+ *  A time budget looked like it was working (HTTP 200, ~26s, no complaints)
+ *  while the run was really dying partway through with "Too many subrequests",
+ *  which is why clocksStarted stayed 0 and the same three games errored every
+ *  night. Wall time was a symptom, not the cause.
+ *
+ *  Foreign rows are free — they're filtered from the single listActiveGames()
+ *  response without touching the store again — so the whole allowance goes to
+ *  real candidates. */
+const MAX_SUBREQUESTS = 40;
+
+/** Slice of the SUBREQUEST allowance held back for games with no clock yet.
  *
  *  Ordering most-overdue-first is right for deciding who to ACT on, but it puts
  *  games that have never been seen at the very back — and the budget was
@@ -61,7 +76,7 @@ const SWEEP_BUDGET_MS = 20_000;
  *
  *  So the two jobs get separate money. Starting a clock is cheap (one read, one
  *  small write), so a few seconds covers a lot of new games. */
-const CLOCK_START_RESERVE_MS = 6_000;
+const CLOCK_START_RESERVE = 12;
 
 const MAX_MOVES_PER_SEAT = 40;
 
@@ -139,6 +154,12 @@ export interface SweepResult {
   /** First error text seen, if any — the per-game catch keeps the sweep alive,
    *  but without this the reason only ever reached a log nobody reads. */
   sampleError?: string;
+  /** True when the platform's per-invocation request allowance ran out. Like
+   *  ranOutOfTime, normal on a busy shared store — the rest is picked up next
+   *  run — but it's the number to watch if takeovers seem slow. */
+  ranOutOfRequests?: boolean;
+  /** Store round-trips used, for sizing the allowance against the platform cap. */
+  requestsUsed?: number;
   /** True when the time budget ran out before every candidate was looked at.
    *  Not an error — the remainder is picked up by the next run — but it's the
    *  signal to watch if takeovers ever seem slow. */
@@ -153,6 +174,21 @@ function isHumanSeat(meta: GameMeta, seat: string): boolean {
   return !identity || !identity.startsWith('ai:');
 }
 
+/** Counts store round-trips so a run stops just short of the platform cap
+ *  instead of being cut off mid-way through one. */
+class RequestBudget {
+  private used = 0;
+  constructor(private readonly cap: number) {}
+  /** True if there's room for `n` more; records them when there is. */
+  take(n = 1): boolean {
+    if (this.used + n > this.cap) return false;
+    this.used += n;
+    return true;
+  }
+  get spent(): number { return this.used; }
+  remaining(): number { return this.cap - this.used; }
+}
+
 export async function sweepAbandonedSeats(opts: {
   server: GameServer<BgioState, TyrantsAction, PlayerId>;
   store: SnapshotStore;
@@ -160,6 +196,10 @@ export async function sweepAbandonedSeats(opts: {
   controllers: Record<string, PlayerController<BgioState, TyrantsAction, PlayerId>>;
   olderThanMs?: number;
   nowMs?: number;
+  /** Override the per-invocation store-request allowance. Defaults to
+   *  MAX_SUBREQUESTS, which is sized for the Cloudflare Worker cap; tests raise
+   *  it to drive scenarios deeper than one production run would reach. */
+  maxSubrequests?: number;
 }): Promise<SweepResult> {
   const olderThanMs = opts.olderThanMs ?? ABANDON_AFTER_MS;
   const now = opts.nowMs ?? Date.now();
@@ -194,21 +234,27 @@ export async function sweepAbandonedSeats(opts: {
   unseen.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   const startedAt = Date.now();
-  // Overdue games get everything except the reserve; unseen games get the rest.
+  // listActiveGames() above already spent one.
+  const budget = new RequestBudget((opts.maxSubrequests ?? MAX_SUBREQUESTS) - 1);
+  // Overdue games may spend everything except the reserve; unseen games may use
+  // what's left. Without that floor the acting pass consumes the whole
+  // allowance, a new game's clock never starts, and it can therefore never
+  // become overdue or be swept at all.
   const order = [
-    ...started.map(m => ({ meta: m, deadline: SWEEP_BUDGET_MS - CLOCK_START_RESERVE_MS })),
-    ...unseen.map(m => ({ meta: m, deadline: SWEEP_BUDGET_MS })),
+    ...started.map(m => ({ meta: m, floor: CLOCK_START_RESERVE })),
+    ...unseen.map(m => ({ meta: m, floor: 0 })),
   ];
-  for (const { meta, deadline } of order.slice(0, MAX_GAMES_PER_SWEEP)) {
-    if (Date.now() - startedAt > deadline) {
-      out.ranOutOfTime = true;
-      // Out of time for the overdue pass only — keep going into the unseen
-      // ones, which is the whole point of the reserve.
-      if (deadline !== SWEEP_BUDGET_MS) continue;
+  for (const { meta, floor } of order.slice(0, MAX_GAMES_PER_SWEEP)) {
+    // Each candidate costs a read and may cost a write right after it.
+    if (budget.remaining() - floor < 2) {
+      out.ranOutOfRequests = true;
+      if (floor > 0) continue;   // acting share exhausted — fall through to the unseen
       break;
     }
+    if (Date.now() - startedAt > SWEEP_BUDGET_MS) { out.ranOutOfTime = true; break; }
     out.scanned++;
     try {
+      budget.take();
       const latest = await opts.store.getLatest(meta.gameId);
       if (!latest) continue;
 
@@ -220,6 +266,7 @@ export async function sweepAbandonedSeats(opts: {
       // No clock yet, or the turn moved since we last looked → not abandoned.
       // Start/restart it and wait for the next sweep.
       if (!r || r.turn !== latest.turn) {
+        budget.take();
         await opts.store.putGameMeta({
           ...meta,
           reminder: { turn: latest.turn, since: new Date(now).toISOString(), sent: r?.sent ?? false },
@@ -239,6 +286,7 @@ export async function sweepAbandonedSeats(opts: {
       // takeover moves fail partway through. Idempotent server-side.
       const alreadyForfeited = (state.G.forfeitedSeats ?? []).includes(actor);
       if (!alreadyForfeited) {
+        budget.take(2);   // a submit reads state and writes a snapshot
         await opts.server.submit(meta.gameId, token, { kind: 'forfeitSeat', seat: actor });
         out.forfeited++;
       }
@@ -248,6 +296,9 @@ export async function sweepAbandonedSeats(opts: {
       if (!ctrl) continue;
       const abandonedSeat = actor;
       for (let i = 0; i < MAX_MOVES_PER_SEAT; i++) {
+        // A takeover move costs a read plus a submit. Stop before overrunning
+        // rather than being cut off mid-move.
+        if (!budget.take(3)) { out.ranOutOfRequests = true; break; }
         const fresh = await opts.store.getLatest(meta.gameId);
         if (!fresh) break;
         const decoded = decodeRow(opts.codec, fresh.state, SCHEMA_VERSION);
@@ -275,5 +326,6 @@ export async function sweepAbandonedSeats(opts: {
       console.error(`[sweep] ${meta.gameId}:`, e);
     }
   }
+  out.requestsUsed = budget.spent + 1;
   return out;
 }

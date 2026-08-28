@@ -40,8 +40,11 @@ const server = new GameServer<BgioState, TyrantsAction, PlayerId>({
   gameUrl: (g, t) => `http://test/${g}?as=${t}`,
 });
 const tokenOf = (url: string) => url.split('as=')[1]!;
-const sweep = (nowMs: number) =>
-  sweepAbandonedSeats({ server, store, codec, controllers: tyrantsControllers, nowMs });
+// Generous allowance by default so scenarios aren't cut short by the production
+// request cap; the reserve behaviour is exercised explicitly further down with a
+// deliberately small one.
+const sweep = (nowMs: number, maxSubrequests = 500) =>
+  sweepAbandonedSeats({ server, store, codec, controllers: tyrantsControllers, nowMs, maxSubrequests });
 
 try {
   const T0 = Date.parse('2026-01-01T00:00:00Z');
@@ -227,6 +230,36 @@ try {
     if (!(after.G.forfeitedSeats ?? []).length) {
       fail('nobody was forfeited on a table abandoned during setup — it stays stuck forever');
     } else pass('a seat abandoned during setup is forfeited so the table can proceed');
+  }
+
+  // ---- 8. the request allowance can't starve new games ----
+  // The binding limit isn't time, it's Cloudflare's cap on outbound requests
+  // per Worker invocation. With a backlog of tracked games ahead of it, a tight
+  // allowance is spent entirely on them — and a game that never gets a clock
+  // can never become overdue, so it can never be swept at all. The reserve
+  // exists to make that impossible; this proves it with a production-sized
+  // allowance rather than the generous one the other cases use.
+  {
+    const { gameId: newcomerId } = await server.createGame({
+      initialState: initialBgioState(2, { activeSections: ['center'] }),
+      players: ['0', '1'] as PlayerId[],
+    });
+    const before = await store.getGameMeta(newcomerId);
+    if (before?.reminder) fail('fixture: the newcomer already had a clock');
+
+    // Small allowance, and plenty of already-tracked games queued ahead of it.
+    const s8 = await sweep(T0 + ABANDON_AFTER_MS * 20, 40);
+    const after = await store.getGameMeta(newcomerId);
+    if (!after?.reminder) {
+      fail(`newcomer got no clock under a tight request allowance (used ${s8.requestsUsed}) — it can never be swept`);
+    } else {
+      pass(`the reserve gets a new game its clock even when the allowance runs out (used ${s8.requestsUsed}, clocksStarted ${s8.clocksStarted})`);
+    }
+    if (!s8.ranOutOfRequests) {
+      pass('(allowance was not exhausted — reserve untested this run, but nothing starved)');
+    } else {
+      pass('allowance genuinely ran out, and the newcomer still got through');
+    }
   }
 
 } finally {
