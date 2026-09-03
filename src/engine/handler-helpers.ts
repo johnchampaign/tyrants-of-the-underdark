@@ -1377,28 +1377,47 @@ export function moveDeckToDiscard(): EffectHandler {
   };
 }
 
+/** Indices into `G.players[actorId].discard` that a "promote from your discard
+ *  pile" effect may offer.
+ *
+ *  Cards played this turn sit in the player's PLAY AREA per the rules, but the
+ *  engine also pushes them into `discard` during the turn. Effects that promote
+ *  "from your discard pile" (Matron Mother, Necromancer, Vampire) must NOT
+ *  offer those play-area cards (#65). Exclude one discard entry per
+ *  card-played-this-turn (by deck::slot, multiset — handles duplicates).
+ *
+ *  Exported so the `available` predicates on the chooseOne menus that lead here
+ *  can ask the same question the picker will (#108) — a bare
+ *  `discard.length > 0` offered "Promote a card from your discard" on a turn
+ *  where the whole discard pile was this turn's play area, and picking it did
+ *  nothing visible. */
+export function promotableDiscardIndices(
+  G: import('../game').TyrantsState,
+  actorId: string,
+): number[] {
+  const me = G.players[actorId];
+  if (!me) return [];
+  const playedLeft = new Map<string, number>();
+  for (const c of G.cardsPlayedThisTurn ?? []) {
+    const k = `${c.deck}::${c.slot}`;
+    playedLeft.set(k, (playedLeft.get(k) ?? 0) + 1);
+  }
+  const options: number[] = [];
+  for (let i = 0; i < me.discard.length; i++) {
+    const c = me.discard[i];
+    const k = `${c.deck}::${c.slot}`;
+    const n = playedLeft.get(k) ?? 0;
+    if (n > 0) { playedLeft.set(k, n - 1); continue; } // play-area card — skip
+    options.push(i);
+  }
+  return options;
+}
+
 export function promoteFromDiscardChoice(opts?: { optional?: boolean }): EffectHandler {
   return ctx => {
     if (!ctx.pendingChoice) {
       const me = ctx.G.players[ctx.actorId];
-      // Cards played this turn sit in the player's PLAY AREA per the rules, but
-      // the engine also pushes them into `discard` during the turn. Effects that
-      // promote "from your discard pile" (Matron Mother, Necromancer) must NOT
-      // offer those play-area cards (#65). Exclude one discard entry per
-      // card-played-this-turn (by deck::slot, multiset — handles duplicates).
-      const playedLeft = new Map<string, number>();
-      for (const c of ctx.G.cardsPlayedThisTurn) {
-        const k = `${c.deck}::${c.slot}`;
-        playedLeft.set(k, (playedLeft.get(k) ?? 0) + 1);
-      }
-      const options: number[] = [];
-      for (let i = 0; i < me.discard.length; i++) {
-        const c = me.discard[i];
-        const k = `${c.deck}::${c.slot}`;
-        const n = playedLeft.get(k) ?? 0;
-        if (n > 0) { playedLeft.set(k, n - 1); continue; } // play-area card — skip
-        options.push(i);
-      }
+      const options = promotableDiscardIndices(ctx.G, ctx.actorId);
       if (options.length === 0) {
         // No eligible cards, so no picker opens. Players reported this as a
         // silent no-op — they chose "promote from discard" and nothing
@@ -2286,13 +2305,19 @@ export function takeTrophyAndPlace(opts: { count: number; ownerPid?: string; whi
     if (state.remaining <= 0) { ctx.handlerState = null; return true; }
 
     // Step 1 fresh prompt: list every (player, color) with > 0 trophies,
-    // optionally restricted to opts.ownerPid.
-    const choices = enumerateTrophies(ctx.G, opts.ownerPid);
+    // optionally restricted to opts.ownerPid and to white (opts.whiteOnly).
+    // The whiteOnly filter MUST match the one used when the response comes
+    // back (step 1 resume, above): the response is an INDEX into this list, so
+    // a mismatch both offers illegal colours and mis-resolves the pick. Mummy
+    // Lord ("take a white troop from any trophy hall") showed exactly that —
+    // every colour was listed, and picking one silently did nothing (#107).
+    const choices = enumerateTrophies(ctx.G, opts.ownerPid, opts.whiteOnly);
     if (choices.length === 0) { ctx.handlerState = null; return true; }
     const targetTag = opts.ownerPid != null ? ` from P${Number(opts.ownerPid) + 1}'s hall` : '';
+    const colorTag = opts.whiteOnly ? 'white trophy' : 'trophy';
     ctx.pendingChoice = {
       kind: 'choose-one',
-      prompt: `Take a trophy${targetTag} (${state.remaining} remaining). Pick which trophy + color:`,
+      prompt: `Take a ${colorTag}${targetTag} (${state.remaining} remaining). Pick which trophy + color:`,
       options: choices.map(c => c.label),
       optional: opts?.optional ?? true,
     } as PendingChoice;

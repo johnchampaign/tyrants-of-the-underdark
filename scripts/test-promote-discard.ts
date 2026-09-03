@@ -3,6 +3,9 @@
 // discard pile, even though the engine pushes them into `discard` during the
 // turn. Tests promoteFromDiscardChoice's option list directly (no reducer).
 import { promoteFromDiscardChoice } from '../src/engine/handler-helpers';
+import { logLineText } from '../src/engine/log';
+import { CardRegistry } from '../src/engine/registry';
+import '../src/engine/handlers/undead';
 import type { CardRef } from '../src/game';
 
 let ok = true;
@@ -12,8 +15,10 @@ const check = (label: string, cond: boolean) => {
 };
 const C = (deck: string, slot: number, name: string): CardRef => ({ deck, slot, name, image: '' });
 
+// G.log holds structured entries; render them to prose for the assertions.
 function run(discard: CardRef[], playedThisTurn: CardRef[]): { options: number[]; log: string[] } {
-  const log: string[] = [];
+  const log: any[] = [];
+  const text = () => log.map(logLineText);
   const ctx: any = {
     G: { players: { '0': { discard } }, cardsPlayedThisTurn: playedThisTurn, log },
     card: C('undead', 28, 'Vampire'),
@@ -23,8 +28,8 @@ function run(discard: CardRef[], playedThisTurn: CardRef[]): { options: number[]
     handlerState: null,
   };
   const done = promoteFromDiscardChoice()(ctx);
-  if (done) return { options: [], log }; // handler returned true => no eligible options
-  return { options: ctx.pendingChoice.options as number[], log };
+  if (done) return { options: [], log: text() }; // handler returned true => no eligible options
+  return { options: ctx.pendingChoice.options as number[], log: text() };
 }
 
 function optionsFor(discard: CardRef[], playedThisTurn: CardRef[]): number[] {
@@ -72,6 +77,41 @@ function optionsFor(discard: CardRef[], playedThisTurn: CardRef[]): number[] {
   const discard = [C('drow', 1, 'X'), C('drow', 2, 'Y')];
   const opts = optionsFor(discard, []);
   check('no plays this turn -> all discard offered', JSON.stringify(opts) === JSON.stringify([0, 1]));
+}
+
+// 5. #108: the chooseOne menus that lead here must not OFFER the discard
+// option when nothing in the discard pile is actually promotable. A bare
+// `discard.length > 0` check offered it on a turn where the whole "discard"
+// was this turn's play area — the player picked it and nothing happened.
+function necromancerMenu(discard: CardRef[], playedThisTurn: CardRef[], hand: CardRef[]): string[] {
+  const ctx: any = {
+    G: { players: { '0': { discard, hand, innerCircle: [] } }, cardsPlayedThisTurn: playedThisTurn, log: [] },
+    card: C('undead', 34, 'Necromancer'),
+    actorId: '0',
+    pendingChoice: null,
+    paused: false,
+    handlerState: null,
+  };
+  const done = CardRegistry.get('necromancer')!(ctx);
+  return done ? [] : (ctx.pendingChoice.options as string[]);
+}
+
+{
+  const played = [C('drow', 10, 'A'), C('drow', 11, 'B')];
+  const menu = necromancerMenu([...played], played, []);
+  check('Necromancer: discard option hidden when the pile is all play-area cards (#108)',
+    !menu.some(o => o.toLowerCase().includes('discard')));
+  check('Necromancer: the other options still show', menu.length === 2);
+}
+{
+  const menu = necromancerMenu([C('drow', 1, 'X')], [], []);
+  check('Necromancer: discard option shown when a real discard card exists',
+    menu.some(o => o.toLowerCase().includes('discard')));
+}
+{
+  const menu = necromancerMenu([], [], []);
+  check('Necromancer: discard option hidden on an empty discard pile',
+    !menu.some(o => o.toLowerCase().includes('discard')));
 }
 
 console.log(ok ? '\nALL PROMOTE-FROM-DISCARD TESTS PASSED' : '\nTESTS FAILED');

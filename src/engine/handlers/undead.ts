@@ -16,7 +16,7 @@ import { grant, flagEotPromote, placeSpyAtChosenSite, sequence, registerAll, tim
          marketDevourReplaceWithSelf, takeTrophyAndPlace,
          recruitFromMarketFiltered, recruitFromDevouredPile,
          promoteFromHandChoice, promoteSelf,
-         conditionalGrant, promoteFromDiscardChoice,
+         conditionalGrant, promoteFromDiscardChoice, promotableDiscardIndices,
          assassinateAtLastPlacedSpySite,
          playerHasOwnSpy, playerCanAssassinate } from '../handler-helpers';
 import { TROOP_SPACES } from '../../data/troop-spaces';
@@ -168,8 +168,13 @@ registerAll({
                            { label: 'Promote this card (Necromancer → inner circle)', handler: promoteSelf() },
                            { label: 'Promote a card from your hand', handler: promoteFromHandChoice(),
                              available: (G, a) => G.players[a].hand.length > 0 },
+                           // #108: `discard.length > 0` counted this turn's
+                           // play-area cards, so the option showed up on turns
+                           // where nothing was actually promotable and picking
+                           // it did nothing. Ask the same question the picker
+                           // will.
                            { label: 'Promote a card from your discard', handler: promoteFromDiscardChoice(),
-                             available: (G, a) => G.players[a].discard.length > 0 }),
+                             available: (G, a) => promotableDiscardIndices(G, a).length > 0 }),
 
   // Cost 6 — Death Knight: supplant a troop + 1 VP per 5 player trophies
   'death-knight':        sequence(
@@ -239,6 +244,13 @@ registerAll({
   'vampire':             chooseOne(
                            { label: 'Supplant a troop', handler: supplantChoice() },
                            { label: 'Promote from discard + VP-per-3-promoted',
+                             // NOT narrowed to promotableDiscardIndices (cf.
+                             // Necromancer, #108): unlike Necromancer's, this
+                             // option is not a no-op when the discard has
+                             // nothing promotable — the "then gain 1 VP for
+                             // every 3 cards in your inner circle" half still
+                             // applies, and promoteFromDiscardChoice logs why
+                             // the picker didn't open (#86).
                              available: (G, a) => G.players[a].discard.length > 0,
                              handler: sequence(
                                promoteFromDiscardChoice({ optional: false }),
