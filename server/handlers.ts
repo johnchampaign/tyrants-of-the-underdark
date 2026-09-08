@@ -8,7 +8,7 @@
 // adapter's initialBgioState (boardgame.io's InitializeGame under the hood).
 // The seats are the bgio seat-index strings '0'..'3'.
 
-import type { GameServer, ReportSubmission, SnapshotStore } from 'digital-boardgame-framework/server';
+import type { GameServer, ReportSubmission, SnapshotStore, ReportFilter } from 'digital-boardgame-framework/server';
 import type { Codec, PlayerController } from 'digital-boardgame-framework';
 import { sweepAbandonedSeats } from './sweep';
 import type { BgioState, TyrantsAction, PlayerId } from '../src/adapter/tyrantsAdapter';
@@ -213,8 +213,17 @@ export async function handleApi(
     if (segs[1] === 'reports') {
       // GET /api/reports
       if (segs.length === 2 && method === 'GET') {
-        const unresolved = query.get('unresolved') === '1';
-        return { status: 200, body: await server.listReports(unresolved ? { unresolved: true } : undefined) };
+        // Forward the supported filters. The backend is shared with other games:
+        // without ?app_id= (or ?category=) this lists EVERY game's reports.
+        const filter: ReportFilter = {};
+        if (query.get('unresolved') === '1') filter.unresolved = true;
+        for (const [k, f] of [['app_id', 'appId'], ['category', 'category'], ['severity', 'severity'], ['since', 'since'], ['gameId', 'gameId']] as const) {
+          const v = query.get(k); if (v) (filter as Record<string, unknown>)[f] = v;
+        }
+        // ?full=1 → include the state blobs; otherwise the DB isn't even asked for
+        // them (a 670-row listing on the shared backend was 40 MB / 10–12 s).
+        filter.bodies = query.get('full') === '1';
+        return { status: 200, body: await server.listReports(filter) };
       }
       // POST /api/reports/:id/resolve
       if (segs[3] === 'resolve' && method === 'POST') {
