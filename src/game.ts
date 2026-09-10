@@ -97,7 +97,7 @@ export interface ControlMarker {
 
 /** Printed per-site values for both faces of each control marker. Sourced
  *  directly from assets/tokens/<site>-control.jpg and -total-control.jpg. */
-const MARKER_VALUES: Record<string, {
+export const MARKER_VALUES: Record<string, {
   controlInfluence: number; controlVp: number;
   totalControlInfluence: number; totalControlVp: number;
 }> = {

@@ -1084,7 +1084,15 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
         cursor: enabled ? 'pointer' : 'not-allowed', opacity: enabled ? 1 : 0.4,
       }}>{label}</button>
   );
-  const deployLabel = p.barracksLeft <= 0 ? 'Deploy (1 Power → +1 VP)' : 'Deploy (1 Power)';
+  // Power lives in the status line at the very top of the page. In split view
+  // the action bar is often the only thing on screen above the map, so "how
+  // many troops can I still deploy?" meant scrolling back up. Put the count on
+  // the buttons that spend it — cost first, then what you actually have
+  // (requested on BGG).
+  const powerCost = (cost: number) => `${cost} of ${p.power} Power`;
+  const deployLabel = p.barracksLeft <= 0
+    ? `Deploy (${powerCost(1)} → +1 VP)`
+    : `Deploy (${powerCost(1)})`;
   // End-turn guard: resources reset each turn so unspent power / influence /
   // unplayed cards are wasted. Warn the player before ending — easy to bump
   // the End Turn button by accident, especially on touch. Skip the prompt
@@ -1241,6 +1249,18 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
   const marketHeading = (
     <>
           Market
+          {/* Same reasoning as the power counts on the action bar: influence is
+              only shown in the top-of-page status line, so answering "can I
+              afford this card?" while looking at the market meant scrolling
+              away from the market. Show it in the heading instead. */}
+          <span
+            title="Influence you have to spend right now. Unspent influence is lost when your turn ends."
+            style={{
+              marginLeft: 8, fontSize: 13, fontWeight: 700,
+              color: p.influence > 0 ? '#ffd479' : '#8a8296',
+            }}>
+            · {p.influence} Influence
+          </span>
           {(G.devouredPile?.length ?? 0) > 0 && (
             <button onClick={() => setPileView('devoured')}
               title="View the devoured pile — cards removed from the game. Some cards let you recruit the top one."
@@ -1279,9 +1299,9 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
     <div style={{ marginTop: 16, display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
       {actionBtn(deployLabel, canDeploy, baseAction?.kind === 'deploy',
         () => setBaseAction(baseAction?.kind === 'deploy' ? null : { kind: 'deploy' }))}
-      {actionBtn('Assassinate (3 Power)', canAssassinate, baseAction?.kind === 'assassinate',
+      {actionBtn(`Assassinate (${powerCost(BASE_ACTION_POWER_COST)})`, canAssassinate, baseAction?.kind === 'assassinate',
         () => setBaseAction(baseAction?.kind === 'assassinate' ? null : { kind: 'assassinate' }))}
-      {actionBtn('Return enemy spy (3 Power)', canReturnSpy, baseAction?.kind === 'return-spy',
+      {actionBtn(`Return enemy spy (${powerCost(BASE_ACTION_POWER_COST)})`, canReturnSpy, baseAction?.kind === 'return-spy',
         () => setBaseAction(baseAction?.kind === 'return-spy' ? null : { kind: 'return-spy' }))}
       {baseAction && actionBtn('Cancel', true, false, () => setBaseAction(null))}
       {(() => {

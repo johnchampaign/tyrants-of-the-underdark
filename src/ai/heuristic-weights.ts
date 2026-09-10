@@ -24,6 +24,24 @@ export interface HeuristicWeights {
   deployFirstFootBonus: number;
   /** Score for a non-site (route) space. */
   deployRouteSpace: number;
+  /** Opening deployment: coefficient on how close a candidate starting site
+   *  is to the control-marker sites that are in play. Starting sites carry no
+   *  control marker of their own, so ranking them by printed VP (the old
+   *  behaviour) ignored the thing that actually decides the game — which
+   *  markers you can reach and contest first. Scored as
+   *  sum(marker payout / troops-to-take) / (1 + deploy-distance). 0 = old
+   *  behaviour. Raised on BGG ("choose sites close to The Phaerlin or
+   *  Gauntlgrym"), generalised to whichever markers are on the board for the
+   *  current player count.
+   *
+   *  MEASURED at 10 over 240 games (40 x 4P + 200 x 2P) vs the old VP-only
+   *  ranking: pooled gap -2.1pp in this knob's favour against a +/-8.5pp
+   *  noise floor — a TIE. The two runs disagreed in direction (4P leaned
+   *  baseline, 2P leaned this), which is what no real effect looks like.
+   *  Shipped on the strength of the defect it fixes, not a measured win:
+   *  ranking markerless starting sites by printed VP was answering a
+   *  question nobody asked. Don't raise it expecting strength. */
+  openingMarkerProximity: number;
   /** Opening-move variety: on its very first deploy of the game (no map
    *  presence yet), the AI samples its starting SITE from the top-K sites by
    *  deploy score, weighted by rank so the strongest stays most likely but
@@ -127,6 +145,28 @@ export interface HeuristicWeights {
    *  (same pattern as recruitAuxStackBonus) for that future work. */
   recruitTacticalBonus: number;
 
+  // --- Positional value (lookahead evaluation) ---
+  /** VP-equivalent price of one of your spies being on the board, added to the
+   *  lookahead's end-of-turn evaluation. See PositionalWeights in
+   *  src/ai/lookahead.ts for why an evaluation built on scoreAll alone can't
+   *  see a spy at all. 0 = old behaviour (VP only).
+   *
+   *  MEASURED at 1 (with spyMarkerPresenceValue 1) over 240 games
+   *  (40 x 4P + 200 x 2P): pooled gap +5.7pp to the BASELINE against a
+   *  +/-8.5pp noise floor — a TIE, but both runs leaned the same way, so
+   *  treat "slightly harmful" as live and don't raise this knob without
+   *  re-measuring. Shipped anyway because self-play is a weak instrument
+   *  here: both sides misprice spies identically, so the thing this fixes
+   *  (holding presence against an opponent who punishes its absence) is
+   *  largely invisible in a tournament against itself. Even 0.5 flips the
+   *  Vrock decision in scripts/test-ai-spy-opening.ts, so the lever is very
+   *  sensitive — a smaller value would fix the reported behaviour with less
+   *  distortion elsewhere, and is the first thing to try if this ever
+   *  measures as a real loss. */
+  spyPresenceValue: number;
+  /** Extra VP-equivalent when that spy sits at a control-marker site. */
+  spyMarkerPresenceValue: number;
+
   // --- Lookahead toggle ---
   /** Enable 1-ply lookahead at high-leverage decision points (assassinate
    *  target, deploy target, spy site, supplant target). Treat as 0/1:
@@ -148,6 +188,7 @@ export const DEFAULT_WEIGHTS: HeuristicWeights = {
   deployFirstFootBonus: 2,
   deployRouteSpace: 1,
   openingVarianceTopK: 4,
+  openingMarkerProximity: 10,
 
   assassinateWhite: 2,
   assassinateEnemy: 6,
@@ -185,6 +226,9 @@ export const DEFAULT_WEIGHTS: HeuristicWeights = {
   recruitAuxStackBonus: 0,
   recruitPerInfluenceBlend: 0,
   recruitTacticalBonus: 4,
+
+  spyPresenceValue: 1,
+  spyMarkerPresenceValue: 1,
 
   useLookahead: 1,
   useCardOrdering: 1,

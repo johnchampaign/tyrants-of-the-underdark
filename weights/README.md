@@ -53,5 +53,20 @@ the tuner can drift on a lucky run. Confirm any accepted tune by
 running a fresh 300-game tournament against the baseline before
 promoting `tuned.json` into shipped defaults.
 
-The runner is ~1.4 games/sec for 2P and slower for 4P, so an 80-game
-2P trial finishes in ~60 seconds.
+## How long a run actually takes
+
+**Budget hours, not minutes.** Measured Sept 2026 on a 12-core box:
+
+| Setup | Per game | 200 games |
+|---|---|---|
+| 2P | ~83 s | ~5.5 h |
+| 4P | ~137 s | ~7.5 h |
+
+An earlier version of this file claimed "~1.4 games/sec for 2P" — that
+predates the turn-end rollout, which costs roughly 100x. The runner
+prints nothing between its header and the final summary, so a run in
+progress is indistinguishable from a hung one; check that the node
+process is pinned at 100% CPU rather than reading anything into the
+silence. Size the run before starting it: the noise floor is
++/-2*sqrt(0.5/seat-games), so 200 2P games buys +/-10pp and 40 4P games
+buys only +/-15.8pp — wide enough that most real effects hide inside it.
