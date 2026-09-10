@@ -94,21 +94,36 @@ function vrockChoice(weights: typeof DEFAULT_WEIGHTS, endgame: boolean): { idx: 
 }
 
 const before = vrockChoice({ ...DEFAULT_WEIGHTS, spyPresenceValue: 0, spyMarkerPresenceValue: 0 }, false);
+const priced = vrockChoice({ ...DEFAULT_WEIGHTS, spyPresenceValue: 1, spyMarkerPresenceValue: 1 }, false);
 const after = vrockChoice(DEFAULT_WEIGHTS, false);
 const endgame = vrockChoice(DEFAULT_WEIGHTS, true);
 
 console.log('   Vrock options:', before.options.join(' | '));
-console.log(`   pure-VP evaluation picks: ${before.idx} (${before.options[before.idx ?? 0]})`);
-console.log(`   shipped weights pick:     ${after.idx} (${after.options[after.idx ?? 0]})`);
-console.log(`   after end-game trigger:   ${endgame.idx} (${endgame.options[endgame.idx ?? 0]})`);
+console.log(`   pure-VP evaluation picks:    ${before.idx} (${before.options[before.idx ?? 0]})`);
+console.log(`   with presence priced at 1:   ${priced.idx} (${priced.options[priced.idx ?? 0]})`);
+console.log(`   shipped weights pick:        ${after.idx} (${after.options[after.idx ?? 0]})`);
+console.log(`   after end-game trigger:      ${endgame.idx} (${endgame.options[endgame.idx ?? 0]})`);
 
 check('the Vrock fork is offered as a two-option choose-one', before.options.length === 2);
-check('mid-game, the AI keeps the spy on the board rather than cashing it for power',
-  after.idx === 0);
-// The reporter's own caveat, and the reason this can't be a hard rule: once the
-// end-game trigger has fired the game is decided on VP, board presence buys
-// nothing further, and trading the spy for 5 power is right.
-check('after the end-game trigger, the AI is free to cash the spy in again',
+
+// What this file pins is the LEVER, not a policy. The reported behaviour —
+// the AI cashing a spy in for power rather than placing one — is real and
+// reproduces at pure-VP evaluation. Pricing board presence flips it. But the
+// logged corpus says the price should be zero: over 10,979 positions any
+// positive value makes the evaluator worse at naming the eventual winner, and
+// over 20,599 mid-game seat-positions spies on the board correlate -0.12 with
+// final margin (winners hold 0.94, everyone else 1.34). See the weights file.
+// So the weight ships at 0 and the AI still cashes the spy in — what must not
+// break is that the lever moves the decision when someone turns it up.
+check('at pure-VP evaluation the AI cashes the spy in (the reported behaviour)',
+  before.idx === 1);
+check('pricing board presence flips that decision — the lever works',
+  priced.idx === 0);
+check('shipped defaults price presence at zero, so behaviour matches pure VP',
+  after.idx === before.idx);
+// Independent of the weight: once the end-game trigger fires, presence is
+// priced at zero no matter what the knob says, so cashing in is right.
+check('after the end-game trigger, presence is worth nothing and cashing in is right',
   endgame.idx === 1);
 
 // -------------------------------------------------------------- opening pick

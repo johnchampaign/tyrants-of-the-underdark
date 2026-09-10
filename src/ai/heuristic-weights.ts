@@ -151,18 +151,28 @@ export interface HeuristicWeights {
    *  src/ai/lookahead.ts for why an evaluation built on scoreAll alone can't
    *  see a spy at all. 0 = old behaviour (VP only).
    *
-   *  MEASURED at 1 (with spyMarkerPresenceValue 1) over 240 games
-   *  (40 x 4P + 200 x 2P): pooled gap +5.7pp to the BASELINE against a
-   *  +/-8.5pp noise floor — a TIE, but both runs leaned the same way, so
-   *  treat "slightly harmful" as live and don't raise this knob without
-   *  re-measuring. Shipped anyway because self-play is a weak instrument
-   *  here: both sides misprice spies identically, so the thing this fixes
-   *  (holding presence against an opponent who punishes its absence) is
-   *  largely invisible in a tournament against itself. Even 0.5 flips the
-   *  Vrock decision in scripts/test-ai-spy-opening.ts, so the lever is very
-   *  sensitive — a smaller value would fix the reported behaviour with less
-   *  distortion elsewhere, and is the first thing to try if this ever
-   *  measures as a real loss. */
+   *  MEASURED AND REVERTED TO 0. Two instruments, same answer:
+   *
+   *  1. Tournaments (240 games) said TIE, both runs leaning baseline.
+   *  2. scripts/bench-eval.ts, scoring the evaluator against 10,979 real
+   *     logged positions with known outcomes, says any positive value makes
+   *     it WORSE at naming the eventual winner, monotonically:
+   *       0 -> 53.8%   0.5 -> 53.0%   1 -> 52.8%   2 -> 50.9%   5 -> 45.0%
+   *     (Spearman falls 0.3945 -> 0.2041 across the same range.)
+   *
+   *  The premise was wrong, not just the magnitude. Over 20,599 mid-game
+   *  seat-positions, spies ON THE BOARD correlate -0.12 with final margin:
+   *  eventual winners are sitting on 0.94 of them, everyone else 1.34. A
+   *  spy's value is in being SPENT (draw / power / supplant), not parked, so
+   *  pricing a parked spy as an asset was pricing the wrong thing. The
+   *  likeliest confound is worth stating: a player who is behind places spies
+   *  defensively to deny total control, so this may be a symptom of losing
+   *  rather than a cause. Either way the data does not support the term.
+   *
+   *  The knob and its code path are kept — the lever works, and
+   *  scripts/test-ai-spy-opening.ts pins that it does — so a better-shaped
+   *  version (decaying with game progress, or valuing only spies that deny
+   *  an opponent's total control) can be tried and measured in seconds. */
   spyPresenceValue: number;
   /** Extra VP-equivalent when that spy sits at a control-marker site. */
   spyMarkerPresenceValue: number;
@@ -227,8 +237,8 @@ export const DEFAULT_WEIGHTS: HeuristicWeights = {
   recruitPerInfluenceBlend: 0,
   recruitTacticalBonus: 4,
 
-  spyPresenceValue: 1,
-  spyMarkerPresenceValue: 1,
+  spyPresenceValue: 0,
+  spyMarkerPresenceValue: 0,
 
   useLookahead: 1,
   useCardOrdering: 1,

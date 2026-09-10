@@ -37,7 +37,8 @@
     "test:online-setup": "vite-node scripts/test-online-setup.ts",
     "test:repro-107": "vite-node scripts/test-mummy-lord-white-trophy.ts",
     "test:promote-discard": "vite-node scripts/test-promote-discard.ts",
-    "test:ai-spy-opening": "vite-node scripts/test-ai-spy-opening.ts"
+    "test:ai-spy-opening": "vite-node scripts/test-ai-spy-opening.ts",
+    "bench-eval": "vite-node scripts/bench-eval.ts --"
   },
   "keywords": [],
   "author": "",
