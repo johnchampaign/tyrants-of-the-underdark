@@ -73,6 +73,42 @@ interface GameLog {
   };
 }
 
+/** The save codec deliberately omits fields that live elsewhere in the log
+ *  file (turnLogs / snapshots), fields that are per-session (undoStack), and
+ *  fields that postdate the logs we're reading (logTurn / logSide arrived with
+ *  log-format v2; cardsPlayed and pendingEotInnerCircleVp were added later).
+ *  Handing that state straight to the reducer means the first playCard does
+ *  `players[pid].cardsPlayed.push(...)` on undefined — which is why this
+ *  analyzer used to replay turn 1 of each game and throw on every turn after
+ *  it, silently discarding 95% of the corpus. Fill the gaps before replaying. */
+function rehydrate(G: TyrantsState): TyrantsState {
+  const g = G as unknown as Record<string, unknown>;
+  g.turnLogs ??= [];
+  g.snapshots ??= [];
+  g.undoStack ??= [];
+  g.pendingEotInnerCircleVp ??= [];
+  g.log ??= [];
+  g.cardsPlayedThisTurn ??= [];
+  g.turnAspectsPlayed ??= {};
+  g.logTurn ??= 1;
+  g.logSide ??= null;
+  // NOTE: auxStacks is deliberately NOT filled in. Logs old enough to lack it
+  // predate House Guards / Priestesses being implemented at all, so inventing
+  // full stacks would hand the replaying AI two recruit options the human
+  // never had and quietly bias the comparison in the AI's favour. Those games
+  // are counted and excluded instead — see preFeature below.
+  for (const p of Object.values(G.players as unknown as Record<string, Record<string, unknown>>)) {
+    p.cardsPlayed ??= [];
+  }
+  return G;
+}
+
+/** Peek at a codec without rehydrating it — used to test for fields whose
+ *  absence means "this log predates a rules feature". */
+function gPeek(codec: string): Record<string, unknown> {
+  return JSON.parse(Buffer.from(codec.trim(), 'base64').toString('utf-8')) as Record<string, unknown>;
+}
+
 function decodeCodec(codec: string): Partial<TyrantsState> {
   // Node has Buffer for base64 + utf-8 decoding.
   const json = Buffer.from(codec.trim(), 'base64').toString('utf-8');
@@ -120,7 +156,7 @@ function replayOneTurn(
 ): { aiEndG: TyrantsState; gBefore: TyrantsState } | null {
   const snap = log.game.snapshots[snapshotIdx];
   const pid = snap.playerId;
-  const gBefore = decodeCodec(snap.codec) as TyrantsState;
+  const gBefore = rehydrate(decodeCodec(snap.codec) as TyrantsState);
 
   // Build a fresh bgio state and substitute G + ctx fields.
   const wrappedGame = {
@@ -200,6 +236,8 @@ async function main() {
   let analyzed = 0;
   let humanGainSum = 0, aiGainSum = 0;
   let skipped = 0;
+  let loadBoundaries = 0;
+  let preFeature = 0;
 
   for (const f of files) {
     const raw = JSON.parse(readFileSync(join(dir, f), 'utf-8')) as GameLog;
@@ -215,12 +253,31 @@ async function main() {
       if (args.playerFilter && snap.playerId !== args.playerFilter) continue;
       if (!args.playerFilter && !isHumanSeat(log, snap.playerId)) continue;
 
+      // A player can paste a saved game in mid-session ("[state loaded from
+      // codec]"). At that boundary snapshot i is the pre-load position and
+      // i+1 is the loaded one, so the "human's turn" spans an entire imported
+      // game and scores as a +80 VP swing. Those aren't turns anyone played;
+      // consecutive turn numbers are what a real turn looks like.
+      if (nextSnap.turn !== snap.turn + 1) { loadBoundaries++; continue; }
+
+      // Same problem, and the turn numbers stay consecutive through it, so the
+      // check above doesn't catch it: the human's log says so outright.
+      const preTurnLog = log.game.turnLogs.find(t => t.turn === snap.turn && t.playerId === snap.playerId);
+      if ((preTurnLog?.lines ?? []).some(l => l.includes('state loaded from codec'))) {
+        loadBoundaries++; continue;
+      }
+      // Games older than the House Guard / Priestess stacks can't be replayed
+      // against today's rules without giving the AI options the human lacked.
+      if ((gPeek(snap.codec) as { auxStacks?: unknown }).auxStacks === undefined) {
+        preFeature++; continue;
+      }
+
       try {
         const replay = replayOneTurn(log, i, args.noLookahead);
         if (!replay) { skipped++; continue; }
         const before = totalScore(replay.gBefore, snap.playerId);
         const aiAfter = totalScore(replay.aiEndG, snap.playerId);
-        const humanG = decodeCodec(nextSnap.codec) as TyrantsState;
+        const humanG = rehydrate(decodeCodec(nextSnap.codec) as TyrantsState);
         const humanAfter = totalScore(humanG, snap.playerId);
 
         const humanGain = humanAfter - before;
@@ -248,6 +305,8 @@ async function main() {
   console.log(`Logs scanned: ${files.length}`);
   console.log(`Human turns analyzed: ${analyzed}`);
   console.log(`Turns skipped (errors): ${skipped}`);
+  console.log(`Turns skipped (mid-game codec loads, not real turns): ${loadBoundaries}`);
+  console.log(`Turns skipped (logs predating the aux recruit stacks): ${preFeature}`);
   if (analyzed === 0) { console.log('No turns to analyze.'); return; }
   console.log(`Avg human VP gain per turn: ${(humanGainSum / analyzed).toFixed(2)}`);
   console.log(`Avg AI VP gain per turn:    ${(aiGainSum / analyzed).toFixed(2)}`);
