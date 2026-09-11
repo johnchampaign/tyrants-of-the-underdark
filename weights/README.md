@@ -53,6 +53,38 @@ the tuner can drift on a lucky run. Confirm any accepted tune by
 running a fresh 300-game tournament against the baseline before
 promoting `tuned.json` into shipped defaults.
 
+## Measure against the corpus first, tournament second
+
+A tournament is the only thing that answers "does it PLAY better", but it is a
+terrible first instrument: hours per run, and a noise floor wide enough that
+most real effects come back "TIE". Two corpus tools give an answer in seconds,
+using the logged games in `logs/` — each carries a full encoded state at every
+turn boundary plus the final scores, so every (position, seat) pair is a
+labelled prediction problem.
+
+```
+npm run bench-eval      # ~8s   score the evaluator on ~11k real positions
+npm run fit-eval        # ~18s  fit a linear evaluator, report held-out metrics
+```
+
+`bench-eval` asks: from this position, does the evaluator name the seat that
+actually won? Bucketed into thirds of the game, because an evaluator that only
+works once the scores are decided is worth nothing. No RNG anywhere, so a 0.5pp
+difference is a difference — the opposite of the tournament's problem.
+
+`fit-eval` fits ridge regression over the features in `src/ai/eval-features.ts`
+and writes `src/ai/fitted-eval.json`. It splits **by game**, never by position:
+positions inside one game share a board, an opponent set and an outcome, so a
+per-position split leaks the answer and reports a score the model cannot
+reproduce on a game it has not seen.
+
+**These measure prediction, not play.** A model that ranks finished games well
+may still choose moves badly — the corpus is human-vs-AI positions, not the
+positions lookahead explores. Use them to iterate quickly and to kill bad ideas
+cheaply, then spend the hours on a tournament before changing a default. The
+spy-presence knob is the cautionary tale: tournaments said TIE, and bench-eval
+showed it made the evaluator monotonically worse.
+
 ## How long a run actually takes
 
 **Budget hours, not minutes.** Measured Sept 2026 on a 12-core box:

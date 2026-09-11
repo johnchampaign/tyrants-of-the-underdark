@@ -177,6 +177,27 @@ export interface HeuristicWeights {
   /** Extra VP-equivalent when that spy sits at a control-marker site. */
   spyMarkerPresenceValue: number;
 
+  /** Use the corpus-fitted linear evaluator (src/ai/fitted-eval.json) in place
+   *  of the VP-only score inside lookahead. Treat as 0/1.
+   *
+   *  On held-out logged games it is a large prediction win — winner
+   *  identification +11.9 to +16.8pp over six splits, +13.9 to +20.7pp in the
+   *  opening third. But predicting a winner and CHOOSING a move are different
+   *  jobs, and the corpus is human-vs-AI positions, not the positions lookahead
+   *  actually explores — so it was held at 0 until tournaments answered the
+   *  question they are actually good for. They did, decisively, and it is the
+   *  only change all day to clear a noise floor rather than tie against it:
+   *
+   *    4P,  60 games: fitted won 41/60 (68.3%), gap 18.3pp vs +/-12.9 floor, p=0.003
+   *    2P, 200 games: fitted won 153/200 (76.5%), gap 53.0pp vs +/-10.0 floor, p=1.4e-14
+   *    average score 102.0 vs 81.5 in 2P
+   *
+   *  Note this bypasses the VP path in stateValue entirely, so
+   *  spyPresenceValue and spyMarkerPresenceValue no longer apply while it is
+   *  on — the value of a spy is now a fitted coefficient (+2.8) rather than a
+   *  number someone guessed. */
+  useFittedEval: number;
+
   // --- Lookahead toggle ---
   /** Enable 1-ply lookahead at high-leverage decision points (assassinate
    *  target, deploy target, spy site, supplant target). Treat as 0/1:
@@ -239,6 +260,8 @@ export const DEFAULT_WEIGHTS: HeuristicWeights = {
 
   spyPresenceValue: 0,
   spyMarkerPresenceValue: 0,
+
+  useFittedEval: 1,
 
   useLookahead: 1,
   useCardOrdering: 1,

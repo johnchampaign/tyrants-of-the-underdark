@@ -15,7 +15,7 @@ import { hasPresence } from '../engine/map-state';
 import type { AiMove } from './random-ai';
 import { DEFAULT_WEIGHTS, type HeuristicWeights } from './heuristic-weights';
 import { takePhaseSnapshot, type PhaseSnapshot } from './game-phase';
-import { lookaheadPick, setPositionalWeights, type SimulateMoveFn, type RolloutToTurnEndFn } from './lookahead';
+import { lookaheadPick, setPositionalWeights, setFittedEval, type SimulateMoveFn, type RolloutToTurnEndFn } from './lookahead';
 import { categoryOfCard, categoryRank } from './card-classes';
 
 // Module-level pointer to the currently active weights. Per-call entrypoints
@@ -531,6 +531,7 @@ export function decideHeuristicMoveWithWeights(
     (weights.spyPresenceValue || weights.spyMarkerPresenceValue)
       ? { spy: weights.spyPresenceValue, spyAtMarker: weights.spyMarkerPresenceValue }
       : null);
+  const prevF = setFittedEval(weights.useFittedEval > 0);
   // Respect the weight-level toggle so a weight file can opt OUT of
   // lookahead even when the harness offers one — used by the validation
   // tournament to compare lookahead-on vs lookahead-off variants under
@@ -544,6 +545,8 @@ export function decideHeuristicMoveWithWeights(
     SIMULATE = prevS;
     ROLLOUT = prevR;
     setPositionalWeights(prevP);
+    setFittedEval(false);
+    if (prevF) setFittedEval(true);
   }
 }
 

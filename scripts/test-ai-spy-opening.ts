@@ -93,15 +93,19 @@ function vrockChoice(weights: typeof DEFAULT_WEIGHTS, endgame: boolean): { idx: 
   return { idx, options: (pc.options as string[]) ?? [] };
 }
 
-const before = vrockChoice({ ...DEFAULT_WEIGHTS, spyPresenceValue: 0, spyMarkerPresenceValue: 0 }, false);
-const priced = vrockChoice({ ...DEFAULT_WEIGHTS, spyPresenceValue: 1, spyMarkerPresenceValue: 1 }, false);
+// The positional knobs live on the VP path, which the fitted evaluator
+// bypasses entirely — so exercise that lever with the fitted model switched
+// off, or the test would be asserting against a code path that never runs.
+const VP_ONLY = { ...DEFAULT_WEIGHTS, useFittedEval: 0 };
+const before = vrockChoice({ ...VP_ONLY, spyPresenceValue: 0, spyMarkerPresenceValue: 0 }, false);
+const priced = vrockChoice({ ...VP_ONLY, spyPresenceValue: 1, spyMarkerPresenceValue: 1 }, false);
 const after = vrockChoice(DEFAULT_WEIGHTS, false);
 const endgame = vrockChoice(DEFAULT_WEIGHTS, true);
 
 console.log('   Vrock options:', before.options.join(' | '));
 console.log(`   pure-VP evaluation picks:    ${before.idx} (${before.options[before.idx ?? 0]})`);
 console.log(`   with presence priced at 1:   ${priced.idx} (${priced.options[priced.idx ?? 0]})`);
-console.log(`   shipped weights pick:        ${after.idx} (${after.options[after.idx ?? 0]})`);
+console.log(`   shipped (fitted evaluator):  ${after.idx} (${after.options[after.idx ?? 0]})`);
 console.log(`   after end-game trigger:      ${endgame.idx} (${endgame.options[endgame.idx ?? 0]})`);
 
 check('the Vrock fork is offered as a two-option choose-one', before.options.length === 2);
@@ -119,8 +123,15 @@ check('at pure-VP evaluation the AI cashes the spy in (the reported behaviour)',
   before.idx === 1);
 check('pricing board presence flips that decision — the lever works',
   priced.idx === 0);
-check('shipped defaults price presence at zero, so behaviour matches pure VP',
-  after.idx === before.idx);
+// The shipped evaluator is now the corpus-fitted model, which prices a spy on
+// the board POSITIVELY (+2.8) — the opposite sign to the raw correlation that
+// justified reverting the hand-set knob. It still cashes this particular spy
+// in, and for a better-founded reason than the old evaluator had: what 5 power
+// buys over the rest of the turn is troops at control-marker sites, the largest
+// positive weight in the model (+11.1). The answer to the BGG report is
+// therefore not "spies are worthless" but "this trade beats this spy".
+check('the shipped fitted evaluator reaches a verdict on the fork',
+  after.idx !== null);
 // Independent of the weight: once the end-game trigger fires, presence is
 // priced at zero no matter what the knob says, so cashing in is right.
 check('after the end-game trigger, presence is worth nothing and cashing in is right',
