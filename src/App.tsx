@@ -1332,6 +1332,16 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
       {(() => {
         const canPlayAll = myTurn && !G.pendingChoice && !G.setupPhase && basicPlayIdx != null;
         const active = canPlayAll && !playingAll;
+        // This button turning green is what tells you it is your turn — but it
+        // only lit up when there was something to auto-play, so on a hand of
+        // nothing but decision cards the one turn signal on screen went grey
+        // and the turn looked like somebody else's (michael irsutti, BGG).
+        // Keep it green and say so instead. Not clickable — there is nothing
+        // to run — but `default` rather than `not-allowed`, because nothing is
+        // wrong; it is an indicator at that point, not a disabled control.
+        const yourTurnIdle = myTurn && !G.pendingChoice && !G.setupPhase
+          && basicPlayIdx == null && !playingAll;
+        const lit = active || playingAll || yourTurnIdle;
         // While it's running the button becomes STOP. Once started there was no
         // way to interrupt it, which is how a player ended up auto-playing a
         // card whose cost is "devour a card from your hand" with nothing left to
@@ -1343,13 +1353,16 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
             disabled={!active && !playingAll}
             title={playingAll
               ? 'Stop after the card currently being played. Cards already played stay played.'
-              : 'Play every hand card whose effect needs no decision (e.g. resource cards), one after another. Stops when only cards that require a choice remain.'}
+              : yourTurnIdle
+                ? 'It is your turn. Every card left in your hand needs a decision, so there is nothing to auto-play — play them yourself, or take a board action.'
+                : 'Play every hand card whose effect needs no decision (e.g. resource cards), one after another. Stops when only cards that require a choice remain.'}
             style={{ padding: '8px 16px',
-              background: playingAll ? '#5a2a2a' : active ? '#2a4a30' : '#2a2a2a',
-              color: (active || playingAll) ? 'white' : '#777',
+              background: playingAll ? '#5a2a2a' : (active || yourTurnIdle) ? '#2a4a30' : '#2a2a2a',
+              color: lit ? 'white' : '#777',
               border: 'none', borderRadius: 4,
-              cursor: (active || playingAll) ? 'pointer' : 'not-allowed', marginLeft: 'auto' }}>
-            {playingAll ? '■ Stop' : '▶▶ Play all basic'}
+              cursor: (active || playingAll) ? 'pointer' : yourTurnIdle ? 'default' : 'not-allowed',
+              marginLeft: 'auto' }}>
+            {playingAll ? '■ Stop' : yourTurnIdle ? '✦ Your turn' : '▶▶ Play all basic'}
           </button>
         );
       })()}
