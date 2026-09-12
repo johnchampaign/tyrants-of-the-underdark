@@ -1,0 +1,17 @@
+# This checkout lives on a drive shared with Windows, and something on that side
+# rewrites files with CRLF line endings. Git stored LF, so every one of those
+# files showed as modified: 299 files, 741,851 insertions and 741,851 deletions,
+# with `git diff --ignore-all-space` completely empty — not one byte of real
+# change. That made `git add -A` a trap (any real commit would be buried under
+# three-quarters of a million noise lines) and forced every commit to be staged
+# by explicit path.
+#
+# `text=auto` tells git to normalise text files to LF in the repository, so a
+# CRLF working file and an LF stored file are no longer a difference. `eol=lf`
+# also checks them out as LF on every platform, so the two sides agree rather
+# than converting back and forth.
+* text=auto eol=lf
+
+# Leave the actual binaries alone — normalising these would corrupt them.
+*.png binary
+*.pdf binary
