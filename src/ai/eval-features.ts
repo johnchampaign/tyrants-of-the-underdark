@@ -13,11 +13,10 @@
 // way to ship a model that measured well and plays badly, so there is
 // deliberately no second copy of this arithmetic anywhere.
 import type { TyrantsState } from '../game';
-import { SITES, SITES_BY_ID } from '../data/sites';
-import { TROOP_SPACES_BY_ID, sitesSpaces } from '../data/troop-spaces';
+import { SITES_BY_ID } from '../data/sites';
+import { TROOP_SPACES_BY_ID } from '../data/troop-spaces';
 import { lookupCard } from '../card-data';
 import { scorePlayer } from '../engine/scoring';
-import { hasPresence } from '../engine/map-state';
 
 /** Feature names, in the order featuresFor returns them. A fitted weight file
  *  stores this list so a stale model can be detected rather than silently
@@ -29,16 +28,6 @@ export const EVAL_FEATURE_NAMES = [
   // --- board presence: invisible to scoreAll ---
   'troopsOnBoard', 'troopsAtMarkerSites', 'routeTroops',
   'spiesOnBoard', 'spiesInReserve',
-  // --- the approach to a garrisoned city ---
-  // A control-marker site that starts full of white troops cannot be deployed
-  // into at all: the only way in is to stand adjacent (or put a spy there),
-  // assassinate a white, then take the freed slot. That is a multi-turn
-  // project, and an evaluation that stops at end-of-turn can only see it if
-  // the first steps are worth something on their own. Without these two, the
-  // heavy markers were simply never approached — Araumycos finished untouched
-  // in three-quarters of the games where it went unclaimed, whites still
-  // standing. Reported from BGG as the AI neglecting the bottom cities.
-  'markerFootholds', 'markerSlotsOpen',
   // --- the clock: barracks running out is one of the two end-game triggers ---
   'barracksLeft',
   // --- engine quality ---
@@ -87,29 +76,12 @@ export function featuresFor(G: TyrantsState, seat: string): EvalFeatures {
     if (cols?.includes(colour)) spiesOnBoard++;
   }
 
-  // Footholds: marker sites I can reach into but do not yet hold, and the slots
-  // standing empty at them. Killing a white at a site I am adjacent to converts
-  // directly into markerSlotsOpen, so the intermediate step of a multi-turn
-  // capture stops being invisible.
-  let markerFootholds = 0, markerSlotsOpen = 0;
-  for (const site of SITES) {
-    if (!site.hasControlMarker) continue;
-    if (!(site.id in (G.siteControl ?? {}))) continue;
-    if (G.siteControl[site.id] === colour) continue;
-    if (!hasPresence(G, colour, { site: site.id })) continue;
-    markerFootholds++;
-    for (const sp of sitesSpaces(site.id)) {
-      if (!G.troops[sp.id]) markerSlotsOpen++;
-    }
-  }
-
   const cd = cyclingDeck(p);
 
   return [
     s.sites, s.totalControl, s.trophies, s.deckVp, s.innerCircleVp, s.vpTokens,
     troopsOnBoard, troopsAtMarkerSites, routeTroops,
     spiesOnBoard, p.spiesLeft ?? 0,
-    markerFootholds, markerSlotsOpen,
     p.barracksLeft ?? 0,
     cd.n, cd.n > 0 ? cd.vp / cd.n : 0, p.innerCircle?.length ?? 0,
     p.influence ?? 0, p.power ?? 0,

@@ -34,7 +34,7 @@ import { fetchUnseenFixNotes, markFixNoteSeen, type FixNoteUpdate } from './bug-
 import { capturePageScreenshot } from './screenshot';
 import { decideAiMove, type AiMove } from './ai/random-ai';
 import { decideHeuristicMove, decideHeuristicMoveWithWeights } from './ai/heuristic-ai';
-import { DEFAULT_WEIGHTS } from './ai/heuristic-weights';
+import { AI_STYLES, labelForStyle, describeStyle, weightsForStyle, type AiStyle as AiStyleT } from './ai/difficulty';
 import type { SimulateMoveFn, RolloutToTurnEndFn } from './ai/lookahead';
 import { CreateGameReducer, InitializeGame } from 'boardgame.io/internal';
 import { lookupCard } from './card-data';
@@ -184,15 +184,9 @@ export function isSkipSummariesMode(): boolean {
   return readUrlBoolFlag('skip-summaries', SKIP_SUMMARIES_KEY);
 }
 
-// Difficulty tiers exposed in the new-game dialog. 'easy' is the same
-// heuristic as 'standard', but with the rollout-lookahead disabled — that
-// difference alone is worth ~28 pp of win-rate (rollout-on vs rollout-off
-// tournament measurement) and roughly tracks the pre/post change in
-// browser-game win rates against humans (~8% vs ~32%). 'standard' is the
-// current default. We deliberately don't call it "hard" — it still loses
-// ~2/3 of games to a competent human; truly hard would need deeper
-// lookahead or opponent-reply modeling.
-type AiStyle = 'random' | 'easy' | 'heuristic';
+// Difficulty ladder lives in src/ai/difficulty.ts so the tier->weights mapping
+// has one definition shared with its test.
+type AiStyle = AiStyleT;
 
 type ThirdPlayerSide = 'left' | 'right';
 interface GameConfig {
@@ -215,7 +209,9 @@ const AI_FNS: Record<AiStyle, (G: TyrantsState, pid: string) => AiMove | null> =
   // MoveWithWeights). These entries are here so the Record type is total.
   easy: decideHeuristicMove,
   heuristic: decideHeuristicMove,
+  hard: decideHeuristicMove,
 };
+
 
 /** Rulebook p.5: 2P = center only; 3P = center + one outer; 4P = all three. */
 function activeSectionsFor(cfg: GameConfig): Array<'left' | 'center' | 'right'> {
@@ -746,7 +742,8 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
       const seatIdx = Number(aiPid);
       const style = session?.config.aiStyles[seatIdx - 1] ?? 'random';
       let decided: AiMove | null = null;
-      if (style === 'heuristic' && aiLookahead) {
+      const styleWeights = weightsForStyle(style);
+      if ((style === 'heuristic' || style === 'hard') && aiLookahead) {
         // Build simulate + rollout closures that hand the AI the boardgame.io
         // reducer for counterfactual play. Without these the heuristic falls
         // back to pure-score ranking (no chooseOne fix, no rollout) — that's
@@ -769,7 +766,11 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
           while (inner-- > 0) {
             if (s.ctx.gameover) break;
             if (s.ctx.currentPlayer !== pid) break;
-            const m = decideHeuristicMoveWithWeights(s.G, pid, DEFAULT_WEIGHTS);
+            // Roll out with the SAME tier this seat is playing. Passing
+            // DEFAULT_WEIGHTS was harmless while every lookahead seat shared
+            // one weight-set; now that standard and hard differ, it would have
+            // a standard seat plan its turn as the hard AI.
+            const m = decideHeuristicMoveWithWeights(s.G, pid, styleWeights);
             if (!m) { s = reducer(s, action('endTurn', [], pid)); continue; }
             const next = reducer(s, action(m.name, m.args as unknown[], pid));
             if (next === s) s = reducer(s, action('endTurn', [], pid));
@@ -777,14 +778,15 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
           }
           return s.G;
         };
-        decided = decideHeuristicMoveWithWeights(G, aiPid, DEFAULT_WEIGHTS, simulate, rollout);
-      } else if (style === 'easy') {
+        decided = decideHeuristicMoveWithWeights(G, aiPid, styleWeights, simulate, rollout);
+      } else if (style === 'easy' || style === 'heuristic' || style === 'hard') {
         // Easy tier: heuristic with lookahead disabled. The useLookahead
         // weight is respected by the AI's lookahead-aware code paths, so
         // setting it to 0 collapses the AI to pre-rollout strength (which
         // beat humans ~8% of the time vs ~32% for the standard tier).
-        const easyWeights = { ...DEFAULT_WEIGHTS, useLookahead: 0 };
-        decided = decideHeuristicMoveWithWeights(G, aiPid, easyWeights);
+        // Either the 'easy' tier (which opts out of lookahead) or a
+        // lookahead tier with no simulator available: score-only ranking.
+        decided = decideHeuristicMoveWithWeights(G, aiPid, styleWeights);
       } else {
         const decide = AI_FNS[style] ?? decideAiMove;
         decided = decide(G, aiPid);
@@ -2432,18 +2434,14 @@ function NewGameDialog({ onStart, hasSave, onResume, lastConfig }: {
           {Array.from({ length: opponentCount }, (_, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
               <span style={{ width: 32, opacity: 0.7 }}>P{i + 2}</span>
-              {(['random', 'easy', 'heuristic'] as AiStyle[]).map(s => (
+              {AI_STYLES.map(s => (
                 <button key={s} onClick={() => setStyle(i, s)}
-                  title={
-                    s === 'random' ? 'Picks a legal move at random. Almost never wins.'
-                    : s === 'easy' ? 'Heuristic AI without lookahead. Plays sensible moves but doesn\'t see the consequences of choices. Beats humans ~8% in our data.'
-                    : 'Heuristic AI with full lookahead (looks ahead to end-of-turn state, picks targets that pay off). Beats humans ~32% in our data.'
-                  }
+                  title={describeStyle(s)}
                   style={{
                     padding: '4px 12px', cursor: 'pointer', borderRadius: 4, fontSize: 12,
                     background: trimmedStyles[i] === s ? '#5a3380' : '#2a1840',
                     color: '#e6e1f2', border: '1px solid #3a2055',
-                  }}>{s === 'heuristic' ? 'standard' : s}</button>
+                  }}>{labelForStyle(s)}</button>
               ))}
             </div>
           ))}

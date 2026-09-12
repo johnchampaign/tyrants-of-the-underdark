@@ -16,8 +16,22 @@ const COLOR_NAMES = ['Black', 'Red', 'Orange', 'Blue'];
 type SeatFill = 'human' | 'random' | 'standard';
 const SEAT_FILL_LABEL: Record<SeatFill, string> = {
   human: 'Human',
-  random: 'Bot · easy',
+  // Was labelled "Bot · easy", which set the wrong expectation: this seat plays
+  // a random legal move, not a weak-but-sensible game. Someone picking "easy"
+  // expects the latter.
+  random: 'Bot · random',
   standard: 'Bot · standard',
+};
+
+/** Online bots run inside a Worker with a hard per-move CPU budget, so they
+ *  play WITHOUT the turn-ahead search the solo game uses. The online
+ *  "standard" seat is therefore closer to solo's "easy" tier than to its
+ *  "standard" one — worth saying plainly rather than letting the shared word
+ *  imply a strength it does not have. */
+const SEAT_FILL_TITLE: Record<SeatFill, string> = {
+  human: 'Leave this seat open and send someone an invite link.',
+  random: 'Plays a legal move at random. Almost never wins — good for learning the flow of an online game.',
+  standard: 'Plays sensible moves but does not plan a turn ahead (online bots run under a strict time budget). Roughly the solo game\'s "easy" opponent; the solo game\'s standard and hard tiers are stronger.',
 };
 
 export function Lobby() {
@@ -145,6 +159,7 @@ export function Lobby() {
                 <button
                   key={fill}
                   onClick={() => setSeatFill((m) => ({ ...m, [seat]: fill }))}
+                  title={SEAT_FILL_TITLE[fill]}
                   style={{ ...mini, ...((seatFill[seat] ?? 'human') === fill ? { background: '#5a3380', color: 'white' } : {}) }}
                 >
                   {SEAT_FILL_LABEL[fill]}

@@ -78,6 +78,32 @@ positions inside one game share a board, an opponent set and an outcome, so a
 per-position split leaks the answer and reports a score the model cannot
 reproduce on a game it has not seen.
 
+### A prediction win is not a play win — measured, not theoretical
+
+This is not a caution, it is a result. Three successive evaluator versions each
+improved held-out winner identification, and the last two made the AI play
+WORSE:
+
+| model | held-out winner-ID | early | beats `standard` 2P | 4P |
+|---|---|---|---|---|
+| 17 features | 60.2% | 45.3% | **76.5%** | **68.3%** |
+| 19 (+ footholds) | 61.8% | 47.4% | — | — |
+| 23 (+ occupant split) | 62.1% | 49.0% | 62.0% | 46.7% |
+
+Prediction rose monotonically, 60.2 -> 61.8 -> 62.1. Play strength fell off a
+cliff: in 4P the entire advantage over the VP-only evaluator disappeared
+(68.3% -> 46.7%, p=0.014), and in 2P it shrank by 14.5pp (p=0.0015). The
+23-feature model is the better judge of finished games and the worse player.
+
+The likely mechanism: the corpus is human-vs-AI positions. More features fit it
+more tightly, quirks included. But move selection has to score positions that
+LOOKAHEAD INVENTS, which are off that distribution — so a tighter corpus fit
+buys accuracy exactly where it is not needed and loses it where it is.
+
+Practical rule: use bench-eval/fit-eval to iterate and to kill bad ideas
+cheaply, but a feature set only ships after a tournament. Do not stack two
+prediction-validated increments and assume they compose.
+
 **These measure prediction, not play.** A model that ranks finished games well
 may still choose moves badly — the corpus is human-vs-AI positions, not the
 positions lookahead explores. Use them to iterate quickly and to kill bad ideas
