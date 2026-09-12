@@ -239,6 +239,29 @@ const HOVER_CAPABLE =
   typeof window.matchMedia === 'function' &&
   window.matchMedia('(hover: hover)').matches;
 
+/** Split view stacks map-over-cards, which suits a laptop or a tablet. On a
+ *  wide desktop that wastes the screen: the board is landscape, so a stacked
+ *  layout leaves a third of the width empty while squeezing both panels
+ *  vertically. Past this width they sit side by side instead — "horizontal
+ *  layout for wide screens", requested on BGG.
+ *
+ *  A live media-query listener rather than a one-shot read, so dragging a
+ *  window across the threshold reflows instead of waiting for a reload. */
+const WIDE_LAYOUT_QUERY = '(min-width: 1200px)';
+function useWideLayout(): boolean {
+  const [wide, setWide] = useState(() =>
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      && window.matchMedia(WIDE_LAYOUT_QUERY).matches);
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const mq = window.matchMedia(WIDE_LAYOUT_QUERY);
+    const onChange = () => setWide(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return wide;
+}
+
 function Card({ card, onClick, label, dim }: { card: CardRef; onClick?: () => void; label?: string; dim?: boolean }) {
   const [hover, setHover] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
@@ -2632,6 +2655,7 @@ function SplitPlayView(props: {
           clickableMarketSlots, humanMapPick, actionBar, interactivePromptBar, marketHeading,
           mySeat: me, onViewPile } = props;
   const [focus, setFocus] = useState<'map' | 'cards' | null>(null);
+  const wide = useWideLayout();
 
   // Hover expansion: on hover-capable devices, mouse enter/leave drive
   // which panel takes more vertical space. On touch, focus is unset and
@@ -2641,9 +2665,10 @@ function SplitPlayView(props: {
   const enterCards = HOVER_CAPABLE ? () => setFocus('cards') : undefined;
   const leaveCards = HOVER_CAPABLE ? () => setFocus(prev => prev === 'cards' ? null : prev) : undefined;
 
-  // Flex weights — when one panel is focused it claims most of the height;
+  // Flex weights — when one panel is focused it claims most of the space;
   // otherwise the map gets ~60% (typical board games favor seeing the
-  // board at all times) and cards get ~40%.
+  // board at all times) and cards get ~40%. Side by side these divide WIDTH
+  // rather than height, so hover-to-expand needs no separate case.
   const mapFlex = focus === 'map' ? '4 1 0' : focus === 'cards' ? '1 1 0' : '3 1 0';
   const cardsFlex = focus === 'cards' ? '4 1 0' : focus === 'map' ? '1 1 0' : '2 1 0';
 
@@ -2651,7 +2676,10 @@ function SplitPlayView(props: {
     flex: kind === 'map' ? mapFlex : cardsFlex,
     overflow: 'auto',
     transition: 'flex 280ms ease',
-    minHeight: 80,
+    // Stacked, each panel needs a floor so neither collapses to nothing. Side
+    // by side the floor has to move to the other axis, and minHeight must be
+    // released or the row cannot shrink to fit the viewport.
+    ...(wide ? { minWidth: 260, minHeight: 0 } : { minHeight: 80 }),
   });
 
   return (
@@ -2751,6 +2779,16 @@ function SplitPlayView(props: {
           </div>
         </div>
       )}
+      {/* Everything above stays in a column — banners, the action bar, the
+          pile strip. Only the two big panels flip axis, so a prompt never
+          ends up beside the board. */}
+      <div style={{
+        display: 'flex',
+        flexDirection: wide ? 'row' : 'column',
+        gap: 8,
+        flex: 1,
+        minHeight: 0,
+      }}>
       <div onMouseEnter={enterMap} onMouseLeave={leaveMap} style={sectionBox('map')}>
         <MapView G={G}
           clickableSites={startingClickable} onSiteClick={handleSiteClick}
@@ -2842,6 +2880,7 @@ function SplitPlayView(props: {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
