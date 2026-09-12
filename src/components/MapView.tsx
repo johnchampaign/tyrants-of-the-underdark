@@ -119,11 +119,26 @@ function ControlMarkerToken(
   // One visual state per case: a solid coloured ring (with thicker stroke
   // and brighter halo on total control) for whoever currently controls, or
   // a thin gold "unclaimed" ring when nobody does.
-  const ringColor = controller ? COLOR_HEX[controller] : 'rgba(255,204,68,0.65)';
+  // The unclaimed ring used to be gold — rgba(255,204,68) — which sits right
+  // between the yellow player (#d9c520) and the orange player (#d97a1d). On a
+  // dark board an unclaimed city therefore read as one somebody already held:
+  // "it may make you think the city is controlled by the orange player"
+  // (michael irsutti, BGG). A muted silver that matches no player colour, plus
+  // a DASHED stroke, says "nobody holds this" by shape as well as by hue —
+  // no player ring is ever dashed, so it survives colourblindness and the
+  // custom colours players can pick.
+  const ringColor = controller ? COLOR_HEX[controller] : 'rgba(198,190,214,0.55)';
   const borderWidth = !controller ? 2 : totalControl ? 6 : 3;
   const sideLabel = totalControl ? 'TOTAL CONTROL' : 'CONTROL';
   const inf = totalControl ? totalControlInfluence : controlInfluence;
   const vp = totalControl ? totalControlVp : 0;
+  // Every control marker in the game pays +1 influence and 0 VP on its control
+  // face — the number is identical at all seven cities, so printing it on an
+  // unclaimed marker distinguishes nothing and just adds a figure to read past.
+  // Same report. Show values only once they mean something: when a player
+  // holds the city, and above all on the total-control face, where the VP
+  // actually does differ from city to city.
+  const showValues = !!controller;
   // Two-line center stack: "+N inf" (always) then "+N VP" (total-control only).
   return (
     <div title={`Control: +${controlInfluence} influence/turn. Total control: +${totalControlInfluence} influence/turn + ${totalControlVp} VP/turn.\n${
@@ -144,17 +159,23 @@ function ControlMarkerToken(
         {/* Disc with the marker's signature deep-purple fill and a thin
             decorative inner ring to read as a chip, not a flat circle. */}
         <circle cx="50" cy="50" r="48" fill={totalControl ? '#3a2055' : '#241638'}
-          stroke={ringColor} strokeWidth={borderWidth} />
+          stroke={ringColor} strokeWidth={borderWidth}
+          strokeDasharray={controller ? undefined : '7 5'} />
         <circle cx="50" cy="50" r="42" fill="none"
           stroke="rgba(196,163,245,0.25)" strokeWidth="1" />
         {/* Center value stack. "+N" + drawn cobweb icon (influence); the VP
             line is drawn only on the total-control face. The cobweb is built
             from concentric arcs + radial spokes so it renders identically
             across browsers regardless of emoji-font coverage. */}
-        <text x="42" y={vp > 0 ? 46 : 58} textAnchor="middle"
-          fontSize="22" fontWeight="700" fill="#fff"
-          fontFamily="Georgia, serif">+{inf}</text>
-        <g transform={`translate(58, ${vp > 0 ? 40 : 52}) scale(1)`}>
+        {showValues && (
+          <text x="42" y={vp > 0 ? 46 : 58} textAnchor="middle"
+            fontSize="22" fontWeight="700" fill="#fff"
+            fontFamily="Georgia, serif">+{inf}</text>
+        )}
+        <g opacity={showValues ? 1 : 0.55}
+          transform={showValues
+            ? `translate(58, ${vp > 0 ? 40 : 52}) scale(1)`
+            : 'translate(50, 50) scale(1.6)'}>
           <circle cx="0" cy="0" r="6" fill="none" stroke="#fff" strokeWidth="0.7" />
           <circle cx="0" cy="0" r="4" fill="none" stroke="#fff" strokeWidth="0.6" />
           <circle cx="0" cy="0" r="2" fill="none" stroke="#fff" strokeWidth="0.5" />
@@ -163,7 +184,7 @@ function ControlMarkerToken(
           <line x1="-4.2" y1="-4.2" x2="4.2" y2="4.2"  stroke="#fff" strokeWidth="0.5" />
           <line x1="-4.2" y1="4.2"  x2="4.2" y2="-4.2" stroke="#fff" strokeWidth="0.5" />
         </g>
-        {vp > 0 && (
+        {showValues && vp > 0 && (
           <text x="50" y="68" textAnchor="middle"
             fontSize="18" fontWeight="700" fill="#ffd966"
             fontFamily="Georgia, serif">
