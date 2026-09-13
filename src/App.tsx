@@ -34,6 +34,7 @@ import { fetchUnseenFixNotes, markFixNoteSeen, type FixNoteUpdate } from './bug-
 import { capturePageScreenshot } from './screenshot';
 import { decideAiMove, type AiMove } from './ai/random-ai';
 import { decideHeuristicMove, decideHeuristicMoveWithWeights } from './ai/heuristic-ai';
+import { AI_VERSION, BUILD_TIME } from './ai-version';
 import { AI_STYLES, labelForStyle, describeStyle, weightsForStyle, type AiStyle as AiStyleT } from './ai/difficulty';
 import type { SimulateMoveFn, RolloutToTurnEndFn } from './ai/lookahead';
 import { CreateGameReducer, InitializeGame } from 'boardgame.io/internal';
@@ -710,6 +711,27 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
   const pendingAiSummary = (pendingAiSummaryIdx >= 0 && !skipSummaries)
     ? G.turnLogs[pendingAiSummaryIdx] : null;
   const showingModal = !!pendingAiSummary;
+
+  // Dismiss the AI turn summary from the keyboard. In a 4-player game this
+  // popup appears three times per round, so reaching for the mouse on every
+  // one of them is most of the clicking a player does — "it's pretty annoying
+  // to have to click this button every time" (michael irsutti, BGG).
+  // Enter / Space confirm, Escape does the same since there is only one action.
+  // A window-level listener rather than relying on focus alone, so it works no
+  // matter what the player last clicked. The button is also autoFocused, which
+  // gives it a visible focus ring; if both paths fire, they set the same value
+  // and React collapses the duplicate.
+  useEffect(() => {
+    if (!showingModal) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.repeat) return;
+      if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar' && e.key !== 'Escape') return;
+      e.preventDefault();
+      setShownTurnLogCount(pendingAiSummaryIdx + 1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showingModal, pendingAiSummaryIdx]);
 
   // While skipping, keep the counter moving past each opponent turn as it
   // completes. Suppressing the modal without advancing would bank a backlog and
@@ -1701,10 +1723,13 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
                 ))}
             </div>
             <div style={{ marginTop: 16, textAlign: 'right' }}>
-              <button onClick={() => setShownTurnLogCount(pendingAiSummaryIdx + 1)}
+              <button autoFocus onClick={() => setShownTurnLogCount(pendingAiSummaryIdx + 1)}
                 style={{ padding: '6px 16px', background: '#5a3380', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer' }}>
                 OK
               </button>
+              <div style={{ marginTop: 8, fontSize: 11, opacity: 0.55 }}>
+                Enter, Space or Esc also works
+              </div>
             </div>
           </div>
         </div>
@@ -1713,7 +1738,16 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
           the flex layout): keeps the desktop single-row header, lets the
           buttons wrap below the title on narrow mobile viewports. */}
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-        <h1 style={{ margin: 0, flex: 1 }}>Tyrants of the Underdark</h1>
+        <h1 style={{ margin: 0 }}>Tyrants of the Underdark</h1>
+        {/* Build stamp. The game ships several times a week, so "is the thing I
+            am looking at the thing you just changed?" was unanswerable from the
+            page — asked for on BGG. AI_VERSION is the git short SHA already
+            stamped into uploaded game logs, so a player quoting this can be
+            matched to an exact build. */}
+        <span title={`Build ${AI_VERSION}${BUILD_TIME !== 'dev' ? ` — ${BUILD_TIME}` : ''}`}
+          style={{ flex: 1, fontSize: 11, opacity: 0.45, fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+          build {AI_VERSION}{BUILD_TIME !== 'dev' ? ` · ${BUILD_TIME.slice(0, 10)}` : ''}
+        </span>
         <button onClick={() => {
           // Flip in React state — NO page reload (reload triggered the
           // resume-from-save path that could reset the game; see noImages state).
