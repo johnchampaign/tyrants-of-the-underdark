@@ -218,3 +218,43 @@ export function categoryOfCard(card: CardRef): CardCategory {
   const data = lookupCard(card.deck, card.slot);
   return data ? categoryOf(data.effectKey) : 'other';
 }
+
+// ---------------------------------------------------------------------------
+// Influence yield
+//
+// The recruit heuristic scored a card on what it is worth (VP) and what it
+// costs — and nothing at all on how much Influence it will generate later.
+// Influence does not carry between turns, so affording a 7- or 8-cost card
+// means having deliberately built a deck that produces 7 in a single turn.
+// A human does that on purpose; the AI had no term for it, so it never built
+// the engine and never reached the top of the market. Measured over 259 logged
+// games: cards costing 7+ were 4.2% of human purchases and 1.3% of the AI's.
+// Reported from BGG — "almost never able to buy cards worth 7-8 Influence".
+//
+// Parsed from the printed benefit text, whose vocabulary calls Influence
+// "money". Two discounts, both deliberate:
+//   - an "or ..." branch is worth about half, since taking it forgoes the
+//     alternative the card also offers;
+//   - a conditional ("if there are 4+ cards promoted, +3 money") likewise,
+//     since it pays only when the condition holds.
+// Guaranteed grants count in full and stack.
+
+const INFLUENCE_RE = /\+(\d+)\s*money/;
+
+/** Influence this card is expected to add to a turn, in the AI's valuation.
+ *  Not a rules quantity — a heuristic estimate with the discounts above. */
+export function influenceYieldOf(card: CardRef): number {
+  const data = lookupCard(card.deck, card.slot);
+  let guaranteed = 0;
+  let branch = 0;
+  for (const raw of data?.benefits ?? []) {
+    const text = raw.trim().toLowerCase();
+    const m = INFLUENCE_RE.exec(text);
+    if (!m) continue;
+    const amount = Number(m[1]);
+    const conditional = text.startsWith('or') || text.startsWith('if') || text.includes(' if ');
+    if (conditional) branch = Math.max(branch, amount);
+    else guaranteed += amount;
+  }
+  return guaranteed + 0.5 * branch;
+}

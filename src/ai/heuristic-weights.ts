@@ -144,6 +144,37 @@ export interface HeuristicWeights {
    *  control — not a blanket bonus. This knob is left as a tunable lever
    *  (same pattern as recruitAuxStackBonus) for that future work. */
   recruitTacticalBonus: number;
+  /** Coefficient on a card's estimated Influence yield (influenceYieldOf in
+   *  card-classes.ts) when deciding what to buy.
+   *
+   *  The recruit score weighed what a card is worth and what it costs, and had
+   *  no term at all for the Influence it generates. Since Influence does not
+   *  carry between turns, affording a 7-cost card means deliberately building
+   *  a deck that makes 7 in one turn — so with no such term the AI never built
+   *  the engine and never reached the top of the market. Over 259 logged games
+   *  cards costing 7+ were 4.2% of human purchases against 1.3% of the AI's.
+   *  Reported from BGG.
+   *
+   *  MEASURED AND LEFT AT 0. The behavioural fix works exactly as intended and
+   *  the AI still plays worse:
+   *
+   *    purchases costing 7+   1.5% -> 4.8% at weight 4 (human benchmark 4.2%,
+   *                           z=4.5, p<1e-5) — the reported defect, fixed
+   *    4P,  60 games          fix won 37/60 (61.7%), p=0.046 — leaning for
+   *    2P, 200 games          fix won 61/200 (30.5%), p=1.8e-8 — heavily against
+   *                           and 20 points LOWER average score
+   *    pooled                 98/260 (37.7%), z=-3.97
+   *
+   *  Why the mechanism backfires: the high-yield cards are cheap and carry
+   *  little deck VP (Priestess of Lolth: cost 2, yield 2). Deck VP is scored at
+   *  the end, so the engine costs more in final points than the expensive cards
+   *  it unlocks return. The 20-point score drop is that trade, priced.
+   *
+   *  Kept as a lever because influenceYieldOf is sound and the diagnosis holds
+   *  — what is wrong is paying for Influence with deck quality. A version that
+   *  prefers HIGH-VP influence cards, or that only builds the engine early,
+   *  could work; it would need measuring the same way. */
+  recruitInfluenceWeight: number;
 
   // --- Positional value (lookahead evaluation) ---
   /** VP-equivalent price of one of your spies being on the board, added to the
@@ -257,6 +288,7 @@ export const DEFAULT_WEIGHTS: HeuristicWeights = {
   recruitAuxStackBonus: 0,
   recruitPerInfluenceBlend: 0,
   recruitTacticalBonus: 4,
+  recruitInfluenceWeight: 0,
 
   spyPresenceValue: 0,
   spyMarkerPresenceValue: 0,

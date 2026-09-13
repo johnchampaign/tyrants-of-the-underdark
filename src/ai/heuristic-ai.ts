@@ -16,7 +16,7 @@ import type { AiMove } from './random-ai';
 import { DEFAULT_WEIGHTS, type HeuristicWeights } from './heuristic-weights';
 import { takePhaseSnapshot, type PhaseSnapshot } from './game-phase';
 import { lookaheadPick, setPositionalWeights, setFittedEval, type SimulateMoveFn, type RolloutToTurnEndFn } from './lookahead';
-import { categoryOfCard, categoryRank } from './card-classes';
+import { categoryOfCard, categoryRank, influenceYieldOf } from './card-classes';
 
 // Module-level pointer to the currently active weights. Per-call entrypoints
 // (decideHeuristicMove / decideHeuristicMoveWithWeights) swap this in for the
@@ -726,8 +726,8 @@ export function decideHeuristicMove(G: TyrantsState, currentPlayer: string): AiM
   // had nothing cheap. Per competitive-play notes, Priestess at 2 inf
   // is a strong buy and worth recruiting repeatedly.
   type Cand =
-    | { kind: 'market'; idx: number; cost: number; icVp: number; deckVp: number; isAux: false; tactical: boolean }
-    | { kind: 'aux'; stack: 'houseGuards' | 'priestesses'; cost: number; icVp: number; deckVp: number; isAux: true; tactical: false };
+    | { kind: 'market'; idx: number; cost: number; icVp: number; deckVp: number; isAux: false; tactical: boolean; influence: number }
+    | { kind: 'aux'; stack: 'houseGuards' | 'priestesses'; cost: number; icVp: number; deckVp: number; isAux: true; tactical: false; influence: number };
   const candidates: Cand[] = [];
 
   for (let i = 0; i < G.market.row.length; i++) {
@@ -738,6 +738,7 @@ export function decideHeuristicMove(G: TyrantsState, currentPlayer: string): AiM
     candidates.push({
       kind: 'market', idx: i, cost: data.cost,
       icVp: data.innerCircleVp ?? 0, deckVp: data.deckVp ?? 0, isAux: false,
+      influence: influenceYieldOf(c),
       // 'tactical' = effect touches the board (spy / assassinate / supplant /
       // promote). Aux stacks (Priestess=influence, House Guard=power) never are.
       tactical: categoryOfCard(c) === 'tactical',
@@ -755,6 +756,8 @@ export function decideHeuristicMove(G: TyrantsState, currentPlayer: string): AiM
     candidates.push({
       kind: 'aux', stack, cost: ref.cost,
       icVp: ref.innerCircleVp ?? 0, deckVp: ref.deckVp ?? 0, isAux: true, tactical: false,
+      influence: influenceYieldOf({ deck: stack === 'priestesses' ? 'priestesses' : 'house-guards',
+                                    slot: stack === 'priestesses' ? 43 : 40, name: '', image: '' }),
     });
   }
 
@@ -764,6 +767,7 @@ export function decideHeuristicMove(G: TyrantsState, currentPlayer: string): AiM
         WEIGHTS.recruitIcVpWeight * c.icVp +
         WEIGHTS.recruitDeckVpWeight * c.deckVp +
         WEIGHTS.recruitCostWeight * c.cost +
+        WEIGHTS.recruitInfluenceWeight * c.influence +
         (c.isAux ? WEIGHTS.recruitAuxStackBonus : 0) +
         (c.tactical ? WEIGHTS.recruitTacticalBonus : 0);
       // Blend raw value vs per-influence efficiency. Per-inf favors low-cost
