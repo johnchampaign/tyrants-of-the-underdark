@@ -163,7 +163,7 @@ export function isNoImagesMode(): boolean {
 
 /** Split-view mode (?split-view=1 / ?split-view=0). When on, a new "play"
  *  tab becomes available that shows the map and the hand+market strip on
- *  the same page — map on top, cards below, with hover-to-expand. Per
+ *  the same page — map and cards, at fixed proportions. Per
  *  user feedback on the forum: "I wonder if it would be possible to
  *  somehow have your hand of cards and the market on the same 'page' as
  *  the map." Off by default; the existing game/map tabs stay unchanged. */
@@ -1772,7 +1772,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
             return next;
           });
         }}
-          title="Toggle split-view mode. Adds a 'play' tab that shows the map and your hand+market on the same page, with hover-to-expand. The original game/map tabs stay available."
+          title="Toggle split-view mode. Adds a 'play' tab showing the map and your hand+market on one page, at fixed proportions. The original game/map tabs stay available."
           style={{ padding: '6px 14px', background: splitView ? '#5a3380' : 'transparent', color: '#e6e1f2', border: '1px solid #3a2055', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}>
           {splitView ? '📐 split view on' : '📐 split view off'}
         </button>
@@ -2701,28 +2701,36 @@ function SplitPlayView(props: {
           startingClickable, handleSiteClick, highlightSites, clickableSpaces, handleSpaceClick,
           clickableMarketSlots, humanMapPick, actionBar, interactivePromptBar, marketHeading,
           mySeat: me, onViewPile } = props;
-  const [focus, setFocus] = useState<'map' | 'cards' | null>(null);
   const wide = useWideLayout();
 
-  // Hover expansion: on hover-capable devices, mouse enter/leave drive
-  // which panel takes more vertical space. On touch, focus is unset and
-  // both panels share the space 50/50 (tap a card to play it normally).
-  const enterMap = HOVER_CAPABLE ? () => setFocus('map') : undefined;
-  const leaveMap = HOVER_CAPABLE ? () => setFocus(prev => prev === 'map' ? null : prev) : undefined;
-  const enterCards = HOVER_CAPABLE ? () => setFocus('cards') : undefined;
-  const leaveCards = HOVER_CAPABLE ? () => setFocus(prev => prev === 'cards' ? null : prev) : undefined;
-
-  // Flex weights — when one panel is focused it claims most of the space;
-  // otherwise the map gets ~60% (typical board games favor seeing the
-  // board at all times) and cards get ~40%. Side by side these divide WIDTH
-  // rather than height, so hover-to-expand needs no separate case.
-  const mapFlex = focus === 'map' ? '4 1 0' : focus === 'cards' ? '1 1 0' : '3 1 0';
-  const cardsFlex = focus === 'cards' ? '4 1 0' : focus === 'map' ? '1 1 0' : '2 1 0';
+  // Panels are FIXED at ~60/40. They used to expand on hover — whichever panel
+  // the cursor was over claimed most of the space — which turned out to be the
+  // single most disliked thing about split view, reported independently by two
+  // players in one day:
+  //
+  //   "once you hover your mouse over a card, whole layout changes completely
+  //    (map shrinks, then from MAP | HAND / MARKET it quickly moves to
+  //    MAP | HAND | MARKET) — it causes everything to fly all over the place,
+  //    while in shared view you'd rather like everything to be as static as
+  //    possible (with only one moving part — the card you hover your mouse
+  //    over)" — go4t, BGG
+  //
+  //   "every time I click it, the display switches ... it's even worse since
+  //    your latest display change" — michael irsutti, BGG, describing the same
+  //    thing from the other end: dismissing a popup leaves the cursor mid-screen
+  //    over a panel, so the layout reflowed on every AI turn.
+  //
+  // The wide-screen layout made it worse by turning that reflow horizontal.
+  // The point of split view is seeing the board and your cards at once; a
+  // layout that rearranges as the cursor moves defeats it. Removing the
+  // hover-expand also removes the only animated resize in this view, which is
+  // what go4t separately reported as losing its smoothness after a tab change.
+  const mapFlex = '3 1 0';
+  const cardsFlex = '2 1 0';
 
   const sectionBox = (kind: 'map' | 'cards'): React.CSSProperties => ({
     flex: kind === 'map' ? mapFlex : cardsFlex,
     overflow: 'auto',
-    transition: 'flex 280ms ease',
     // Stacked, each panel needs a floor so neither collapses to nothing. Side
     // by side the floor has to move to the other axis, and minHeight must be
     // released or the row cannot shrink to fit the viewport.
@@ -2836,13 +2844,13 @@ function SplitPlayView(props: {
         flex: 1,
         minHeight: 0,
       }}>
-      <div onMouseEnter={enterMap} onMouseLeave={leaveMap} style={sectionBox('map')}>
+      <div style={sectionBox('map')}>
         <MapView G={G}
           clickableSites={startingClickable} onSiteClick={handleSiteClick}
           highlightSites={highlightSites}
           clickableSpaces={clickableSpaces} onSpaceClick={handleSpaceClick} />
       </div>
-      <div onMouseEnter={enterCards} onMouseLeave={leaveCards} style={sectionBox('cards')}>
+      <div style={sectionBox('cards')}>
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap', justifyContent: 'center' }}>
           <div style={{ flex: '1 1 320px', minWidth: 280 }}>
             <h3 style={{ margin: '0 0 6px', fontSize: 14, opacity: 0.85, display: 'flex', alignItems: 'baseline', gap: 12 }}>
