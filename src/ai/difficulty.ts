@@ -45,10 +45,26 @@ export function describeStyle(style: AiStyle): string {
   }
 }
 
-/** Weights for one tier. 'standard' and 'hard' differ by the single
- *  `useFittedEval` switch — same search, different judgement of the positions
- *  it reaches. */
+/** How hard 'hard' pulls a spy toward BREAKING an opponent's total control,
+ *  per VP of total-control payout at stake (see siteBreakBonusPerVp).
+ *
+ *  Measured: at 100 the AI takes an available break 73.4% of the time instead
+ *  of 50.0% (live decision-time probe, p=0.00015), and plays exactly as strong
+ *  as without it — 4P 30/60, 2P 96/200, pooled 126/260 (p=0.62). Shipped on
+ *  hard for that reason: it costs nothing measurable and makes the AI do
+ *  visibly what a strong player says is right ("a spy should always be used to
+ *  break an overall majority"), where standard stays the AI people know. */
+const HARD_SITE_BREAK_BONUS_PER_VP = 100;
+
+/** Weights for one tier. 'standard' and 'hard' differ by exactly two things:
+ *  how they judge a position (useFittedEval) and how much a spy is worth when
+ *  it breaks an opponent's total control. Same search otherwise. */
 export function weightsForStyle(style: AiStyle): HeuristicWeights {
   if (style === 'easy') return { ...DEFAULT_WEIGHTS, useLookahead: 0, useFittedEval: 0 };
-  return { ...DEFAULT_WEIGHTS, useFittedEval: style === 'hard' ? 1 : 0 };
+  const hard = style === 'hard';
+  return {
+    ...DEFAULT_WEIGHTS,
+    useFittedEval: hard ? 1 : 0,
+    siteBreakBonusPerVp: hard ? HARD_SITE_BREAK_BONUS_PER_VP : 0,
+  };
 }

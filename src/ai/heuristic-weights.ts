@@ -80,6 +80,74 @@ export interface HeuristicWeights {
    *  they'd otherwise use to assassinate / deploy / build their lead.
    *  Per user's competitive-play notes. */
   siteDenialBonus: number;
+  /** Extra pull toward a control-marker city on a PLAIN spy placement.
+   *
+   *  Measured from 259 logged games, counting actual placements (not spies
+   *  standing at game end — spies get returned during play, which makes the
+   *  end-state a poor proxy). In 4-player games a strong human placed 77.8% of
+   *  spies on a marker city; the AI managed 60.0%. Reported on BGG as
+   *  "deploying a spy anywhere other than a city makes absolutely no sense in
+   *  99% of cases".
+   *
+   *  Deliberately a preference, not the hard rule that was asked for: 100%
+   *  would overshoot the 77.8% the same player actually plays, and some
+   *  non-city placements are correct — cards that place a spy and then supplant
+   *  or assassinate at that site want the spy where the follow-up pays.
+   *
+   *  Applied through lookaheadPick's heuristic tiebreak, which is scaled by
+   *  0.01, so this number is ~100x the VP-equivalent it is worth: 400 here is
+   *  about 4 VP of pull.
+   *
+   *  MEASURED AND LEFT AT 0 — SUPERSEDED. On the lookahead path (the one real
+   *  games use; without a simulator the existing marker bonus already forces
+   *  100% and the knob measures nothing), 10 games of 4P per arm:
+   *    0 -> 70.6%   150 -> 80.0% (p=0.12, not significant)   400 -> 89.5%
+   *  Strength at 150: 4P 33/60, 2P 98/200, pooled 131/260 — neutral. A powered
+   *  30-game recheck of 0 vs 150 was lost when the scratch directory holding its
+   *  output was cleared mid-run.
+   *
+   *  Retired because "put the spy on a city" was a proxy. The objective the
+   *  reporter actually described is breaking an opponent's total control, which
+   *  siteBreakBonusPerVp targets directly. Note the baseline: the logs showed
+   *  60%, but that was the pre-fitted-evaluator AI — today's is already ~71%. */
+  spyCityBonus: number;
+  /** Extra denial value, per VP of total-control payout, for a spy that BREAKS
+   *  an opponent's total control — as opposed to one that merely sits in a city
+   *  they control.
+   *
+   *  siteDenialValue returned the same flat siteDenialBonus for both. They are
+   *  not remotely the same move:
+   *    - BREAK: the opponent owns every space, so they are collecting total-
+   *      control VP every turn. A spy stops that immediately.
+   *    - PREVENT: they merely control the city. A spy denies nothing yet.
+   *  Nor did it scale by the prize: breaking Araumycos stops 3 VP a turn,
+   *  Gauntlgrym 1, and both scored 15.
+   *
+   *  Measured from 184 logged games (state at the start of the placing turn):
+   *  in 4P, when an opponent held total control and a spy could break it, the
+   *  human took the break 57.1% of the time and the AI 40.4% (z=3.51, p=0.0005)
+   *  — while its OVERALL denial rate matched the human's (30.7% vs 27.7%,
+   *  p=0.21). Same amount of denial, aimed at the wrong targets. The framing is
+   *  michael irsutti's, on BGG: "a spy should always be used to break an overall
+   *  majority, or to prevent an opponent from gaining one ... gaining 1 VP per
+   *  turn is huge".
+   *
+   *  Lives inside lookaheadPick's 0.01-scaled tiebreak, so ~100 per VP is about
+   *  1 VP-equivalent of pull per VP at stake.
+   *
+   *  MEASURED. Behaviour, from a live probe at the moment of decision (so no
+   *  turn-start staleness), 20 games of 4P per arm:
+   *    0 -> 50.0%   100 -> 73.4% (p=0.00015)   300 -> 84.9% (p=3e-9)
+   *  Note the current AI's 50.0% baseline is NOT significantly below the logged
+   *  human's 57.1% (p=0.27): the 40.4% in the logs was the pre-fitted-evaluator
+   *  AI, and the fitted evaluator closed most of that gap unaided.
+   *  Strength at 100: 4P 30/60 (50.0%), 2P 96/200 (48.0%), pooled 126/260,
+   *  p=0.62 — neutral in both formats.
+   *
+   *  Default stays 0 so easy and standard are unchanged. Shipped on hard only,
+   *  via src/ai/difficulty.ts, on the grounds that it is free and makes the AI
+   *  visibly break total control the way a strong player says it should. */
+  siteBreakBonusPerVp: number;
 
   // --- Game-phase awareness (see src/ai/game-phase.ts) ---
   /** Minimum barracks across all players at which "late game" starts. */
@@ -165,15 +233,30 @@ export interface HeuristicWeights {
    *                           and 20 points LOWER average score
    *    pooled                 98/260 (37.7%), z=-3.97
    *
-   *  Why the mechanism backfires: the high-yield cards are cheap and carry
-   *  little deck VP (Priestess of Lolth: cost 2, yield 2). Deck VP is scored at
-   *  the end, so the engine costs more in final points than the expensive cards
-   *  it unlocks return. The 20-point score drop is that trade, priced.
+   *  Why the mechanism backfires: influence cards are CHEAP. (Not VP-less —
+   *  of the 34 cards with an influence yield only the Noble, a starter nobody
+   *  buys, carries zero deck VP; Priestess of Lolth is deckVp 1.) Buying more
+   *  cheap cards lowers VP per purchase and dilutes the deck, and deck VP is
+   *  scored at the end — so the engine costs more in final points than the
+   *  expensive cards it unlocks return. The 20-point score drop is that trade.
    *
-   *  Kept as a lever because influenceYieldOf is sound and the diagnosis holds
-   *  — what is wrong is paying for Influence with deck quality. A version that
-   *  prefers HIGH-VP influence cards, or that only builds the engine early,
-   *  could work; it would need measuring the same way. */
+   *  SECOND VARIANT, ALSO MEASURED AND REVERTED — count yield only on cards
+   *  with deckVp >= 2 (Zuggtmoy, the Wyrmlings, Nalfeshnee, Ogremoch), so the
+   *  engine is built from cards that pay their own way:
+   *
+   *    4P,  60 games          30/60 (50.0%) — dead level
+   *    2P, 200 games          83/200 (41.5%), 17pp against a +/-10 floor,
+   *                           average score 95.05 vs 100.67
+   *
+   *  The gate cut the damage (41.5% against raw yield's 30.5%) without removing
+   *  it. Both variants point the same way: the recruit score sees one card at a
+   *  time, and the defect is about a SEQUENCE of purchases — what deck is being
+   *  built. No per-card coefficient can represent that; it needs a different
+   *  mechanism, not a better weight. The untested "build the engine only early"
+   *  idea is still a per-card weight with a phase switch, so expect the same.
+   *
+   *  Kept as a lever because influenceYieldOf is sound and the diagnosis — the
+   *  AI reaches 7-8 cost cards a third as often as a human — still holds. */
   recruitInfluenceWeight: number;
 
   // --- Positional value (lookahead evaluation) ---
@@ -265,6 +348,8 @@ export const DEFAULT_WEIGHTS: HeuristicWeights = {
   siteControlMarkerBonus: 10,
   siteOwnSpyPenalty: 5,
   siteDenialBonus: 15,
+  spyCityBonus: 0,
+  siteBreakBonusPerVp: 0,
 
   // Phase thresholds — user-supplied rules-of-thumb: "38 barracks → still
   // getting started; 8 barracks → game will be over soon."

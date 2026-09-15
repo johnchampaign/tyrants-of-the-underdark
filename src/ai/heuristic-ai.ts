@@ -11,7 +11,7 @@ import { SITES, SITES_BY_ID } from '../data/sites';
 import { TROOP_SPACES, TROOP_SPACES_BY_ID, sitesSpaces } from '../data/troop-spaces';
 import { ADJACENCY } from '../data/routes';
 import { lookupCard } from '../card-data';
-import { hasPresence } from '../engine/map-state';
+import { hasPresence, hasTotalControl } from '../engine/map-state';
 import type { AiMove } from './random-ai';
 import { DEFAULT_WEIGHTS, type HeuristicWeights } from './heuristic-weights';
 import { takePhaseSnapshot, type PhaseSnapshot } from './game-phase';
@@ -211,6 +211,14 @@ function siteDenialValue(G: TyrantsState, siteId: string, myColor: Color): numbe
   if (spiesHere.some(c => c !== myColor)) return 0;
   const controller = G.siteControl[siteId];
   if (!controller || controller === myColor) return 0;
+  // A BREAK is worth far more than a PREVENT: the opponent is already banking
+  // total-control VP every turn, and this spy ends it now. Scale by what is
+  // actually at stake at this city. With no opposing spy present (returned 0
+  // above), hasTotalControl reduces to "they own every space here".
+  if (hasTotalControl(G, controller, siteId)) {
+    const perTurnVp = MARKER_VALUES[siteId]?.totalControlVp ?? 0;
+    return WEIGHTS.siteDenialBonus + WEIGHTS.siteBreakBonusPerVp * perTurnVp;
+  }
   return WEIGHTS.siteDenialBonus;
 }
 
@@ -423,6 +431,18 @@ function resolveChoice(G: TyrantsState, pid: string): AiMove {
     case 'select-site': {
       const ids = opts as string[];
       if (ids.length === 0) return { name: 'resolveChoice', args: [pc.optional ? null : null] };
+      // City preference applies to PLAIN spy placements only.
+      //   - This same case also answers RETURN prompts ("which of your spies
+      //     comes back?"). Preferring a city there would hand back the best
+      //     spy on the board, so gate on the placement prompt specifically.
+      //   - Cards that place a spy and THEN act at that site (supplant,
+      //     assassinate) carry a `highlight` list of sites where the follow-up
+      //     actually pays. Those should drive the pick, not a blanket city
+      //     rule — so leave them alone.
+      const plainSpyPlacement = /^Place a spy/.test(pc.prompt ?? '')
+        && !((pc as unknown as { highlight?: string[] }).highlight?.length);
+      const cityPull = (id: string) =>
+        plainSpyPlacement && SITES_BY_ID[id]?.hasControlMarker ? WEIGHTS.spyCityBonus : 0;
       // 1-ply lookahead beats the per-component scoring here too — it
       // automatically accounts for the consequences a spy placement
       // triggers (denying total control, drawing/grant chains on the
@@ -437,6 +457,7 @@ function resolveChoice(G: TyrantsState, pid: string): AiMove {
           const s = SITES_BY_ID[id];
           let v = (s?.hasControlMarker ? WEIGHTS.siteControlMarkerBonus : 0) + (s?.vp ?? 0);
           v += siteDenialValue(G, id, me.color);
+          v += cityPull(id);
           if ((G.spies[id] ?? []).includes(me.color)) v -= WEIGHTS.siteOwnSpyPenalty;
           return v;
         };
@@ -458,8 +479,8 @@ function resolveChoice(G: TyrantsState, pid: string): AiMove {
         const sa = SITES_BY_ID[a], sb = SITES_BY_ID[b];
         let av = (sa?.hasControlMarker ? WEIGHTS.siteControlMarkerBonus : 0) + (sa?.vp ?? 0);
         let bv = (sb?.hasControlMarker ? WEIGHTS.siteControlMarkerBonus : 0) + (sb?.vp ?? 0);
-        av += siteDenialValue(G, a, me.color);
-        bv += siteDenialValue(G, b, me.color);
+        av += siteDenialValue(G, a, me.color) + cityPull(a);
+        bv += siteDenialValue(G, b, me.color) + cityPull(b);
         if ((G.spies[a] ?? []).includes(me.color)) av -= WEIGHTS.siteOwnSpyPenalty;
         if ((G.spies[b] ?? []).includes(me.color)) bv -= WEIGHTS.siteOwnSpyPenalty;
         return bv - av;

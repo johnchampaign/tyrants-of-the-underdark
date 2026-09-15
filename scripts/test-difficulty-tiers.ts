@@ -33,10 +33,15 @@ check('easy is the only tier that turns lookahead off',
   easy.useLookahead === 0 && std.useLookahead > 0 && hard.useLookahead > 0);
 check('hard is the only tier that uses the fitted evaluator',
   hard.useFittedEval === 1 && std.useFittedEval === 0 && easy.useFittedEval === 0);
-check('standard and hard differ ONLY in the evaluator',
+// Two deliberate differences: how a position is judged, and how much a spy is
+// worth when it breaks an opponent's total control. A third creeping in would
+// quietly change what "standard" means, so pin the exact set.
+check('standard and hard differ ONLY in the evaluator and the spy-break bonus',
   Object.keys({ ...std, ...hard }).filter(k =>
     (std as unknown as Record<string, number>)[k] !== (hard as unknown as Record<string, number>)[k]
-  ).join(',') === 'useFittedEval');
+  ).sort().join(',') === 'siteBreakBonusPerVp,useFittedEval');
+check('only hard pulls spies toward breaking total control',
+  hard.siteBreakBonusPerVp > 0 && std.siteBreakBonusPerVp === 0 && easy.siteBreakBonusPerVp === 0);
 
 // The two evaluators must actually disagree about a position, or the ladder has
 // two rungs at the same height. Use a positional edge worth no victory points:
