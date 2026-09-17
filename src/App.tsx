@@ -11,7 +11,7 @@ import { SlotCalibration } from './components/SlotCalibration';
 import { SectionDividerCalibration } from './components/SectionDividerCalibration';
 import { MarkerCalibration } from './components/MarkerCalibration';
 import { HALF_DECKS, EXPANSION_HALF_DECKS, type HalfDeck } from './half-decks';
-import { colorHex, WHITE_TOKEN_HEX } from './player-colors';
+import { colorHex, WHITE_TOKEN_HEX, needsLightRim, DARK_RIM_HEX } from './player-colors';
 import { GameLog } from './components/GameLog';
 import { GameTabLog } from './components/GameTabLog';
 import { CardLogText } from './components/CardLogText';
@@ -92,13 +92,23 @@ export type OnlineReportCategory = 'game' | 'multiplayer' | 'other';
 /** Small colored chip so players can identify/pick opponents by colour at a
  *  glance instead of memorising which colour is P2/P3/P4 (#66). */
 function ColorSwatch({ color, size = 11 }: { color: string; size?: number }) {
+  // The chip used to paint the raw colour NAME, which meant the black player's
+  // swatch was CSS `black` — a #000 square on the near-black page, i.e. an
+  // empty hole in the scoreboard while every other seat showed a bright chip
+  // (#109: black is "so dull ... it makes it really difficult to read the board
+  // state"). Paint from the shared palette instead, the way the map and the
+  // end-of-game table already do, so the chip matches the tokens it stands for.
+  const paint = color === 'white' ? WHITE_TOKEN_HEX : colorHex(color);
   return (
     <span style={{
       display: 'inline-block', width: size, height: size, borderRadius: 2,
       // Flat gradient (a background-IMAGE) instead of a solid background-color so
       // Samsung Internet / Chrome Android "Website dark mode" can't repaint this
       // player-colour swatch. Looks identical to a solid fill everywhere else.
-      background: `linear-gradient(${color}, ${color})`, border: '1px solid rgba(255,255,255,0.6)',
+      background: `linear-gradient(${paint}, ${paint})`,
+      // A dark chip needs a crisp full-strength rim to have an edge at all; the
+      // mid-tones look better with the softer one.
+      border: `1px solid ${needsLightRim(color) ? DARK_RIM_HEX : 'rgba(255,255,255,0.6)'}`,
       marginRight: 6, verticalAlign: 'middle', flexShrink: 0,
     }} />
   );
@@ -1661,7 +1671,8 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
                             // Flat gradient so Samsung/Chrome forced dark mode
                             // leaves this colour-coded trophy dot as authored.
                             background: `linear-gradient(${c === 'white' ? WHITE_TOKEN_HEX : colorHex(c)}, ${c === 'white' ? WHITE_TOKEN_HEX : colorHex(c)})`,
-                            border: c === 'black' ? '1px solid #555' : 'none',
+                            // #555 on a #4a4a4a dot was a rim you couldn't see.
+                            border: needsLightRim(c) ? `1px solid ${DARK_RIM_HEX}` : 'none',
                           }} />
                           {n}
                         </span>

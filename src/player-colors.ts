@@ -40,3 +40,38 @@ export const colorHex = (c: string): string =>
 
 /** "Teal" — display form of a colour name. */
 export const colorName = (c: string): string => c.charAt(0).toUpperCase() + c.slice(1);
+
+// --- Making the black player readable ------------------------------------
+//
+// Reported from the game (#109): the black colour "shows up gray on screen
+// [and] is so dull compared to the other colors that it makes it really
+// difficult to read the board state." True, and it's structural rather than a
+// matter of taste. Every other colour in the palette is a saturated mid-tone,
+// so it separates from the board by HUE. Black has no hue, and the one grey
+// that works as a token fill in both render modes is a mid grey — which lands
+// at almost exactly the luminance of the blue cavern art the tokens sit on
+// (#4a4a4a vs ~#486595 is about 1.5:1). Lightening the fill would collide with
+// the neutral Underdark token; darkening it would vanish on the near-black
+// boxes of the images-off board.
+//
+// So black earns its contrast from a LINE rather than from its fill: a bright
+// rim and a light halo, which is the same trick the neutral token already uses
+// (ring + centre pip) and which survives colour-blindness and the forced
+// dark-mode repaint MapView fights elsewhere.
+
+/** True for player colours too dark to be read as a line, a ring or a glow
+ *  against the board. Only black — everything else is a mid-tone. */
+export const needsLightRim = (c: string): boolean => c === 'black';
+
+/** Bright rim drawn on a dark player's tokens. Matches the page foreground, so
+ *  it reads as "outlined", not as a second player colour. */
+export const DARK_RIM_HEX = '#e6e1f2';
+
+/** Halo behind a dark player's token: a hairline of true black to bite into
+ *  pale board art, then a soft light bloom to lift it off dark art. */
+export const DARK_RIM_SHADOW = '0 0 0 1px #000, 0 1px 4px rgba(255,255,255,0.5)';
+
+/** Paint for a ring/border drawn in a player's colour. Same as the fill for
+ *  every colour that has luminance to spare; the bright rim for black. */
+export const rimHex = (c: string): string =>
+  needsLightRim(c) ? DARK_RIM_HEX : colorHex(c);

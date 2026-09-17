@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { PLAYER_COLOR_HEX, WHITE_TOKEN_HEX } from '../player-colors';
+import { PLAYER_COLOR_HEX, WHITE_TOKEN_HEX, needsLightRim, rimHex, DARK_RIM_HEX, DARK_RIM_SHADOW } from '../player-colors';
 import { SITES, type Site } from '../data/sites';
 import { ROUTES, type Route } from '../data/routes';
 import { sitesSpaces } from '../data/troop-spaces';
@@ -129,6 +129,15 @@ function ControlMarkerToken(
   // custom colours players can pick.
   const ringColor = controller ? COLOR_HEX[controller] : 'rgba(198,190,214,0.55)';
   const borderWidth = !controller ? 2 : totalControl ? 6 : 3;
+  // The disc is near-black, so a ring painted in black's #4a4a4a was a ring you
+  // had to hunt for — a city held by black read as one nobody held, which is
+  // most of what "difficult to read the board state" meant in #109. Keep the
+  // ring in the player's own grey (so it still says BLACK and not "some light
+  // colour", and stays clear of the silver dashed unclaimed ring), and add a
+  // bright hairline just inside it plus a light halo. Held-by-black is then a
+  // DOUBLE ring: a shape cue, like the neutral token's centre pip.
+  const darkRing = !!controller && needsLightRim(controller);
+  const glowColor = darkRing ? 'rgba(230,225,242,0.85)' : ringColor;
   const sideLabel = totalControl ? 'TOTAL CONTROL' : 'CONTROL';
   const inf = totalControl ? totalControlInfluence : controlInfluence;
   const vp = totalControl ? totalControlVp : 0;
@@ -152,7 +161,7 @@ function ControlMarkerToken(
         width: sizePx, height: sizePx,
         pointerEvents: 'none', zIndex: 6,
         filter: controller
-          ? `drop-shadow(0 0 ${totalControl ? 10 : 6}px ${ringColor})`
+          ? `drop-shadow(0 0 ${totalControl ? 10 : 6}px ${glowColor})`
           : 'drop-shadow(0 1px 3px rgba(0,0,0,0.6))',
       }}>
       <svg viewBox="0 0 100 100" width="100%" height="100%">
@@ -161,6 +170,10 @@ function ControlMarkerToken(
         <circle cx="50" cy="50" r="48" fill={totalControl ? '#3a2055' : '#241638'}
           stroke={ringColor} strokeWidth={borderWidth}
           strokeDasharray={controller ? undefined : '7 5'} />
+        {darkRing && (
+          <circle cx="50" cy="50" r={48 - borderWidth / 2 - 0.9} fill="none"
+            stroke={DARK_RIM_HEX} strokeWidth="1.8" />
+        )}
         <circle cx="50" cy="50" r="42" fill="none"
           stroke="rgba(196,163,245,0.25)" strokeWidth="1" />
         {/* Center value stack. "+N" + drawn cobweb icon (influence); the VP
@@ -367,7 +380,7 @@ export function MapView({ calibrate = false, editRoutes = false, G, clickableSit
                 color: '#e6e1f2',
                 border: isHighlit ? '3px solid #66ff9e'
                   : isClickable ? '2px solid #ffcc44'
-                  : controller ? `2px solid ${COLOR_HEX[controller]}`
+                  : controller ? `2px solid ${rimHex(controller)}`
                   : s.isStartingSite ? '1px solid #ffcc44'
                   : '1px solid #5a3380',
                 borderRadius: 8,
@@ -433,7 +446,7 @@ export function MapView({ calibrate = false, editRoutes = false, G, clickableSit
                             : 'transparent',
                           border: spClick ? '2px solid #ffcc44'
                             : occ === 'white' ? `2px solid ${WHITE_TOKEN_RING}`
-                            : occ === 'black' ? '2px solid #e6e1f2'
+                            : occ && needsLightRim(occ) ? `2px solid ${DARK_RIM_HEX}`
                             : occ ? '2px solid #fff'
                             : '1px dashed rgba(255,255,255,0.35)',
                           boxShadow: spClick ? '0 0 6px #ffcc44' : undefined,
@@ -598,9 +611,17 @@ export function MapView({ calibrate = false, editRoutes = false, G, clickableSit
                 background: occ === 'white' ? neutralFill() : occ ? flat(COLOR_HEX[occ]) : 'rgba(20, 14, 40, 0.7)',
                 border: pickable ? '2px solid #ffcc44'
                   : occ === 'white' ? `2px solid ${WHITE_TOKEN_RING}`
+                  // A troop out on a trail sits straight on the cavern art,
+                  // which is where black's mid-grey fill has the least to
+                  // separate it from the background — so give it the same
+                  // bright rim the site slots already give it, not the 1px
+                  // hairline every colour used to share (#109).
+                  : occ && needsLightRim(occ) ? `2px solid ${DARK_RIM_HEX}`
                   : occ ? '1px solid #fff'
                   : '1px solid rgba(255,255,255,0.3)',
-                boxShadow: pickable ? '0 0 6px #ffcc44' : undefined,
+                boxShadow: pickable ? '0 0 6px #ffcc44'
+                  : occ && needsLightRim(occ) ? DARK_RIM_SHADOW
+                  : undefined,
                 cursor: pickable ? 'pointer' : 'default',
                 zIndex: 5,
               }} />
@@ -727,11 +748,11 @@ export function MapView({ calibrate = false, editRoutes = false, G, clickableSit
                   : 'transparent',
                 border: pickable ? '2px solid #ffcc44'
                   : occ === 'white' ? `2px solid ${WHITE_TOKEN_RING}`
-                  : occ === 'black' ? '2px solid #e6e1f2'
+                  : occ && needsLightRim(occ) ? `2px solid ${DARK_RIM_HEX}`
                   : occ ? '2px solid #fff'
                   : '1px dashed rgba(255,255,255,0.25)',
                 boxShadow: pickable ? '0 0 8px #ffcc44'
-                  : occ === 'black' ? '0 0 0 1px #000, 0 1px 4px rgba(255,255,255,0.5)'
+                  : occ && needsLightRim(occ) ? DARK_RIM_SHADOW
                   : occ ? '0 1px 3px rgba(0,0,0,0.6)'
                   : undefined,
                 cursor: pickable ? 'pointer' : 'default',
@@ -824,9 +845,13 @@ export function MapView({ calibrate = false, editRoutes = false, G, clickableSit
             }}>
             {spies.map((sp, i) => (
               <span key={i} title={`spy: ${sp}`} style={{
-                width: px(24), height: px(24), background: COLOR_HEX[sp],
-                border: '2px solid #fff',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.7)',
+                width: px(24), height: px(24),
+                // flat() for the same forced-dark-mode reason as every other
+                // state token on this map; a solid background-color here was
+                // getting repainted while its neighbours weren't.
+                background: flat(COLOR_HEX[sp]),
+                border: `2px solid ${needsLightRim(sp) ? DARK_RIM_HEX : '#fff'}`,
+                boxShadow: needsLightRim(sp) ? DARK_RIM_SHADOW : '0 1px 4px rgba(0,0,0,0.7)',
               }} />
             ))}
           </div>
