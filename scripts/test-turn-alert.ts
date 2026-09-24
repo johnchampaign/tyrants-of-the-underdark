@@ -1,5 +1,6 @@
 // Regression test for the online "your turn" tab alert (issue #112).
 // Stubs the minimal DOM surface the alert touches.
+export {};
 type L = () => void;
 const winL: Record<string, L[]> = {};
 const docL: Record<string, L[]> = {};
