@@ -40,6 +40,7 @@ import type { SimulateMoveFn, RolloutToTurnEndFn } from './ai/lookahead';
 import { CreateGameReducer, InitializeGame } from 'boardgame.io/internal';
 import { lookupCard } from './card-data';
 import { scoreAll } from './engine/scoring';
+import { alertYourTurn, stopTurnAlert } from './online/turnAlert';
 
 const HUMAN_SEAT = '0';
 
@@ -680,6 +681,17 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
   const opponentTurnLabel = opponentColor
     ? `${opponentColor.charAt(0).toUpperCase()}${opponentColor.slice(1)} is taking their turn`
     : undefined;
+  // Online: blink the tab title and chime when control passes back to us while
+  // the window is in the background, so players can alt-tab during opponents'
+  // turns. Only fires on the handoff (not on every reload while it's our turn).
+  const needsMe = isOnline && currentActor === me && !ctx.gameover;
+  const prevNeedsMe = useRef(needsMe);
+  useEffect(() => {
+    if (needsMe && !prevNeedsMe.current) alertYourTurn();
+    if (!needsMe) stopTurnAlert();
+    prevNeedsMe.current = needsMe;
+  }, [needsMe]);
+  useEffect(() => () => stopTurnAlert(), []);
   // The local AI drives every seat that isn't the local human's — but ONLY in
   // hotseat. Online, every other seat is a remote human, so there is no AI turn.
   const isAiTurn = !isOnline && ctx.currentPlayer !== me;
