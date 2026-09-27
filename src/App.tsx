@@ -20,7 +20,7 @@ import { RouteVerify } from './components/RouteVerify';
 import { ProblemReportDialog } from './components/ProblemReportDialog';
 import { FirstRunImageImport } from './components/FirstRunImageImport';
 import { PlaceholderCard } from './components/PlaceholderCard';
-import { useCachedImage, clearImageBlobUrl, evictImageFromCache } from './image-cache';
+import { useCachedImage, clearImageBlobUrl, evictImageFromCache, isImagePending } from './image-cache';
 import { cardWhiffReason } from './engine/card-targets';
 import { logLineText } from './engine/log';
 import { SITES } from './data/sites';
@@ -357,7 +357,10 @@ function Card({ card, onClick, label, dim }: { card: CardRef; onClick?: () => vo
   };
   // No-images mode forces the placeholder regardless of cache state. Also
   // falls back to placeholder if the image actually 404s at runtime.
-  const showPlaceholder = isNoImagesMode() || imgFailed;
+  // Also while the art is still loading: the stand-in image loads fine, so
+  // without this the card is an empty frame until the source sheet arrives —
+  // indistinguishable from broken (#113).
+  const showPlaceholder = isNoImagesMode() || imgFailed || isImagePending(imgUrl);
   // Touch-only devices: never set hover from synthetic mouse events, so the
   // post-tap enlarge bug can't fire. The visual stays the same as the
   // resting state.

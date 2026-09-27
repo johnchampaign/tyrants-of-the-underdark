@@ -96,6 +96,18 @@ export async function clearImageCache(): Promise<void> {
  *  placeholder avoids a spurious 404 + retry per card on first paint. */
 const BLANK_DATA_URL = 'data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==';
 
+/** True while a card's art is still being fetched and sliced — i.e. the hook is
+ *  still handing back the transparent stand-in. The stand-in LOADS SUCCESSFULLY,
+ *  so an <img> showing it never errors and the card just renders as an empty
+ *  frame. That is what a slow source sheet looked like: every card cut from one
+ *  Imgur sheet (drow, starters, House Guard, Priestess) blank at once, with no
+ *  hint that art was merely on its way (#113). Callers should show a named
+ *  placeholder instead. Also stays true if the fetch never succeeds, which used
+ *  to leave the card blank permanently. */
+export function isImagePending(url: string): boolean {
+  return url === BLANK_DATA_URL;
+}
+
 /** Map a relative `assets/*` path to its remote source URL. Lookup order:
  *  (1) explicit ASSET_URLS entry (e.g. the board image → Imgur),
  *  (2) optional VITE_TOTU_IMAGE_BASE_URL prefix,
