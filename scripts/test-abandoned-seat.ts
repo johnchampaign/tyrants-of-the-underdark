@@ -13,6 +13,9 @@
 //   3. A forfeited seat can never win, even holding the top score.
 //   4. A forfeited seat ranks below every seat that played its own game, which
 //      is what the ratings report reads.
+//   5. A seat can only forfeit ITSELF. Hiding the move from legalActions does
+//      not stop a crafted request, and the server validates with
+//      tryApplyAction — which used to let a player forfeit their opponent.
 //
 //   npx vite-node scripts/test-abandoned-seat.ts
 import { tyrantsAdapter, initialBgioState, type BgioState, type PlayerId } from '../src/adapter/tyrantsAdapter';
@@ -51,6 +54,16 @@ if (s.G.setupPhase) fail('could not clear setup — the rest of this test is mea
   }
   if (leaked > 0) fail(`forfeitSeat was offered in legalActions ${leaked}x — a player could forfeit at will`);
   else pass('forfeitSeat is never offered in legalActions');
+}
+
+// ---- 5. only your own seat ----
+{
+  const onTurn = tyrantsAdapter.currentActor(s)!;
+  const other = Object.keys(s.G.players).find(p => p !== onTurn)!;
+  const r = tyrantsAdapter.tryApplyAction!(s, { kind: 'forfeitSeat', seat: other }, onTurn);
+  if (r.ok) fail(`seat ${onTurn} forfeited OPPONENT seat ${other} — a crafted request can tank a rival's rating`);
+  else pass('a seat cannot forfeit another seat');
+  if ((s.G.forfeitedSeats ?? []).includes(other)) fail('the rejected forfeit still recorded the opponent');
 }
 
 // ---- 2. applies, and is idempotent ----

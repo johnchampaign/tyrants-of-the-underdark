@@ -1064,7 +1064,15 @@ export const TyrantsGame: Game<TyrantsState> = {
      *  Records the flag and nothing else: the turn does NOT pass and the game
      *  does NOT end, because the point is for the seat to keep playing so the
      *  remaining players can finish. */
-    forfeitSeat: ({ G }, seat: string) => {
+    forfeitSeat: ({ G, playerID }, seat: string) => {
+      // A seat may only forfeit ITSELF. Keeping this move out of legalActions
+      // hides it from the UI but does not stop a crafted request: the server
+      // validates with tryApplyAction, which accepted any seat argument — so a
+      // player could forfeit their OPPONENT on their own turn and pin that
+      // opponent to last place in a rated game. The abandoned-seat sweep is
+      // unaffected: it submits with the abandoned seat's own token, so the
+      // submitter and the seat are the same.
+      if (playerID !== seat) return INVALID_MOVE;
       // Deliberately NOT gated on setupPhase. A table where someone joined and
       // then never placed their starting troop is the single most common way a
       // game dies, and it's exactly what this exists for — the others are stuck
