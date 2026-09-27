@@ -35,6 +35,7 @@ import { capturePageScreenshot } from './screenshot';
 import { decideAiMove, type AiMove } from './ai/random-ai';
 import { decideHeuristicMove, decideHeuristicMoveWithWeights } from './ai/heuristic-ai';
 import { AI_VERSION, BUILD_TIME } from './ai-version';
+import { rulesDiscard } from './engine/handler-helpers';
 import { AI_STYLES, labelForStyle, describeStyle, weightsForStyle, type AiStyle as AiStyleT } from './ai/difficulty';
 import type { SimulateMoveFn, RolloutToTurnEndFn } from './ai/lookahead';
 import { CreateGameReducer, InitializeGame } from 'boardgame.io/internal';
@@ -1364,6 +1365,8 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
     </>
   );
 
+  const discardOf = (pid: string) => rulesDiscard(G, pid, ctx.currentPlayer);
+
   const actionBar = (
     <div style={{ marginTop: 16, display: 'flex', gap: 8, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
       {actionBtn(deployLabel, canDeploy, baseAction?.kind === 'deploy',
@@ -1464,6 +1467,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
     if (!pileView) return null;
     // Resolve which player's pile we're showing (defaults to the local viewer).
     const pp = G.players[pilePlayer ?? me] ?? p;
+    const ppId = pilePlayer ?? me;
     const isMe = (pilePlayer ?? me) === me;
     const who = isMe ? 'Your' : `P${Number(pilePlayer) + 1} (${pp.color})'s`;
     // The trophy hall holds captured enemy troop FIGURES, not cards — show it
@@ -1560,7 +1564,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
       );
     }
     const cards = pileView === 'deck' ? pp.deck
-      : pileView === 'discard' ? pp.discard
+      : pileView === 'discard' ? discardOf(ppId)
       : pileView === 'played' ? pp.cardsPlayed
       : pp.innerCircle;
     const title = pileView === 'deck' ? `${who} Deck`
@@ -1968,7 +1972,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
         Player P{Number(me) + 1} ({p.color}) — Turn: P{Number(ctx.currentPlayer) + 1} {myTurn ? '(your turn)' : ''}
         {' · '}Power: {p.power} · Influence: {p.influence}
         {' · '}{pileButton('Deck', p.deck.length, () => { setPilePlayer(null); setPileView('deck'); })}
-        {' · '}{pileButton('Discard', p.discard.length, () => { setPilePlayer(null); setPileView('discard'); })}
+        {' · '}{pileButton('Discard', discardOf(me).length, () => { setPilePlayer(null); setPileView('discard'); })}
         {' · '}{pileButton('Inner Circle', p.innerCircle.length, () => { setPilePlayer(null); setPileView('inner'); })}
         {' · '}{pileButton('Trophies', Object.values(p.trophyHall).reduce((s, n) => s + n, 0), () => { setPilePlayer(null); setPileView('trophy'); })}
         {' · '}Barracks: {p.barracksLeft} · Spies: {p.spiesLeft}
@@ -2023,7 +2027,7 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
                     <span style={{ opacity: 0.55 }}>·</span>
                     <span title="Sites you control">{markers} markers</span>
                     <span style={{ opacity: 0.55 }}>·</span>
-                    {link('discard', pl.discard.length, pid, 'discard')}
+                    {link('discard', discardOf(pid).length, pid, 'discard')}
                     <span style={{ opacity: 0.55 }}>·</span>
                     {link('inner-circle', pl.innerCircle.length, pid, 'inner')}
                     <span style={{ opacity: 0.55 }}>·</span>
@@ -2801,7 +2805,7 @@ function SplitPlayView(props: {
       {/* Pile inspector strip (#68): split view has no full status line, so
           surface clickable Deck / Discard / Inner Circle counts here. */}
       <div style={{ display: 'flex', gap: 12, justifyContent: 'center', fontSize: 13, flexWrap: 'wrap' }}>
-        {([['Deck', p.deck.length, 'deck'], ['Discard', p.discard.length, 'discard'], ['Inner Circle', p.innerCircle.length, 'inner'], ['Trophies', Object.values(p.trophyHall).reduce((s, n) => s + n, 0), 'trophy']] as const).map(([label, count, key]) => (
+        {([['Deck', p.deck.length, 'deck'], ['Discard', rulesDiscard(G, me, props.ctx.currentPlayer).length, 'discard'], ['Inner Circle', p.innerCircle.length, 'inner'], ['Trophies', Object.values(p.trophyHall).reduce((s, n) => s + n, 0), 'trophy']] as const).map(([label, count, key]) => (
           <button key={key} onClick={() => onViewPile(key)}
             title={`View the cards in your ${label.toLowerCase()}`}
             style={{ background: 'none', border: 'none', padding: 0, font: 'inherit', color: '#a9c6ff', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2 }}>

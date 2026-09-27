@@ -1413,6 +1413,29 @@ export function promotableDiscardIndices(
   return options;
 }
 
+/** A player's DISCARD PILE as the rules define it — what any display of the
+ *  pile should show. During a turn the engine files the cards the current
+ *  player has played into `discard` for bookkeeping, but by the rules they sit
+ *  in the play area until end of turn, and "promote from your discard pile"
+ *  effects (Necromancer, Matron Mother, Vampire) correctly refuse them. The
+ *  display used to show the raw array, so a player who had played their whole
+ *  hand saw those cards "in the discard pile" and couldn't promote them — "I
+ *  played my necromancer as my last card ... and I'm not able to promote one of
+ *  my cards in my discard pile" (michael irsutti, BGG). This asks the same
+ *  question the promote effects do, so the display and the rule can't disagree.
+ *  Only the player whose turn it is has cards in play; any other player's pile
+ *  is returned unchanged. */
+export function rulesDiscard(
+  G: import('../game').TyrantsState,
+  pid: string,
+  currentPlayer: string,
+): import('../game').CardRef[] {
+  const pl = G.players[pid];
+  if (!pl) return [];
+  if (pid !== currentPlayer) return pl.discard;
+  return promotableDiscardIndices(G, pid).map(i => pl.discard[i]);
+}
+
 export function promoteFromDiscardChoice(opts?: { optional?: boolean }): EffectHandler {
   return ctx => {
     if (!ctx.pendingChoice) {

@@ -2,7 +2,7 @@
 // must NOT offer cards played this turn — those sit in the play area, not the
 // discard pile, even though the engine pushes them into `discard` during the
 // turn. Tests promoteFromDiscardChoice's option list directly (no reducer).
-import { promoteFromDiscardChoice } from '../src/engine/handler-helpers';
+import { promoteFromDiscardChoice, rulesDiscard } from '../src/engine/handler-helpers';
 import { logLineText } from '../src/engine/log';
 import { CardRegistry } from '../src/engine/registry';
 import '../src/engine/handlers/undead';
@@ -112,6 +112,46 @@ function necromancerMenu(discard: CardRef[], playedThisTurn: CardRef[], hand: Ca
   const menu = necromancerMenu([], [], []);
   check('Necromancer: discard option hidden on an empty discard pile',
     !menu.some(o => o.toLowerCase().includes('discard')));
+}
+
+// ---- The DISPLAY of the discard pile must agree with the rule ----
+// michael irsutti (BGG): played Necromancer as the last card in hand, opened his
+// discard pile, saw cards there, and could not promote any of them. The engine
+// was right — they were this turn's play area — but the display showed the raw
+// array. rulesDiscard is what every pile display now reads.
+function displayAndMenu(discard: CardRef[], played: CardRef[]) {
+  const G: any = { players: { '0': { discard, hand: [], innerCircle: [] } }, cardsPlayedThisTurn: played, log: [] };
+  return {
+    shown: rulesDiscard(G, '0', '0'),
+    offered: necromancerMenu(discard, played, []).some(o => o.toLowerCase().includes('discard')),
+  };
+}
+{
+  // His turn: whole hand played, Necromancer last, no older discards.
+  const played = [C('drow', 10, 'A'), C('drow', 11, 'B'), C('undead', 34, 'Necromancer')];
+  const r = displayAndMenu([...played], played);
+  check('discard pile shows NONE of this turn\'s played cards', r.shown.length === 0);
+  check('...which agrees with Necromancer not offering the discard', r.offered === false);
+}
+{
+  const older = C('drow', 1, 'Older');
+  const played = [C('drow', 10, 'A'), C('undead', 34, 'Necromancer')];
+  const r = displayAndMenu([older, ...played], played);
+  check('discard pile shows exactly the older card', r.shown.length === 1 && r.shown[0].name === 'Older');
+  check('...and Necromancer offers the discard', r.offered === true);
+}
+{
+  // Duplicates: an older copy of a card also played this turn stays visible.
+  const noble = C('starter-1', 0, 'Noble');
+  const r = displayAndMenu([noble, { ...noble }], [noble]);
+  check('an older duplicate of a played card stays in the displayed pile', r.shown.length === 1);
+}
+{
+  // Only the current player has cards in play. Another seat's pile is untouched
+  // even when it happens to hold a copy of a card being played this turn.
+  const shared = C('drow', 10, 'A');
+  const G: any = { players: { '0': { discard: [] }, '1': { discard: [shared] } }, cardsPlayedThisTurn: [shared], log: [] };
+  check('another player\'s discard pile is shown unchanged', rulesDiscard(G, '1', '0').length === 1);
 }
 
 console.log(ok ? '\nALL PROMOTE-FROM-DISCARD TESTS PASSED' : '\nTESTS FAILED');
