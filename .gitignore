@@ -50,3 +50,6 @@ worker/node_modules/
 weights/_smoke-*.json
 weights/tuned.json
 weights/tune-log.json
+
+# Local triage working files (screenshots, issue dumps) - never commit.
+.triage/
