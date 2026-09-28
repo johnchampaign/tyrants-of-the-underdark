@@ -10,15 +10,16 @@
 // That is exactly wrong here: seat identity is ALSO what the ratings report
 // maps through, so overwriting it would erase the walker from the result — and
 // abandoning a game you were losing would become the cheapest way to avoid
-// recording the loss. Instead we leave identities untouched and play the seat
-// ourselves, using the seat's own token. The walker keeps their identity, keeps
-// their place in the result, and `forfeitSeat` pins that place to last.
+// recording the loss. Instead we leave identities untouched and just forfeit
+// the seat, with its own token. `forfeitSeat` pins the walker's place to last,
+// and a forfeited seat is one of the adapter's serverDrivenSeats: the server's
+// AI driver plays it from then on without touching its identity (framework
+// 0.50+).
 //
-// Deliberately idempotent and stateless: re-running is safe, and if the player
-// comes back and takes a turn, the clock resets and they simply carry on.
+// Deliberately idempotent and stateless: re-running is safe, and a player who
+// comes back BEFORE the window runs out resets the clock and simply carries on.
 import type { GameServer, SnapshotStore, GameMeta } from 'digital-boardgame-framework/server';
-import type { Codec, PlayerController } from 'digital-boardgame-framework';
-import { Rng } from 'digital-boardgame-framework';
+import type { Codec } from 'digital-boardgame-framework';
 import type { BgioState, TyrantsAction, PlayerId } from '../src/adapter/tyrantsAdapter';
 import { tyrantsAdapter } from '../src/adapter/tyrantsAdapter';
 
@@ -26,12 +27,6 @@ import { tyrantsAdapter } from '../src/adapter/tyrantsAdapter';
  *  played over days, so this has to be generous — a week is a holiday, not a
  *  walk-out, but two turns in a row at a week each is a dead game. */
 export const ABANDON_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
-
-/** Bot difficulty used when finishing an abandoned seat. Deliberately the
- *  weaker of the two: a seat that has forfeited its placing anyway shouldn't
- *  start playing BETTER than the person who left, which would distort the
- *  remaining players' game. */
-const TAKEOVER_DIFFICULTY = 'random';
 
 /** Hard backstop on candidates per run. The real limiter is the time budget
  *  below — this just stops a pathological list from being walked at all. */
@@ -77,8 +72,6 @@ const MAX_SUBREQUESTS = 40;
  *  So the two jobs get separate money. Starting a clock is cheap (one read, one
  *  small write), so a few seconds covers a lot of new games. */
 const CLOCK_START_RESERVE = 12;
-
-const MAX_MOVES_PER_SEAT = 40;
 
 /** Stored snapshots carry a `v<N>:` schema prefix that the server strips on
  *  read. That splitter is private to the framework, so mirror it here — decoding
@@ -143,8 +136,8 @@ export interface SweepResult {
   scanned: number;
   /** Seats newly marked as forfeited this sweep. */
   forfeited: number;
-  /** Moves played on behalf of abandoned seats. */
-  movesPlayed: number;
+  /** Games where the server's bot then played the abandoned seat's turn. */
+  seatsTakenOver: number;
   /** Games where a takeover was attempted but errored (logged, never thrown). */
   errored: number;
   /** Rows that belong to another game on the shared store, left untouched. */
@@ -193,7 +186,6 @@ export async function sweepAbandonedSeats(opts: {
   server: GameServer<BgioState, TyrantsAction, PlayerId>;
   store: SnapshotStore;
   codec: Codec<BgioState>;
-  controllers: Record<string, PlayerController<BgioState, TyrantsAction, PlayerId>>;
   olderThanMs?: number;
   nowMs?: number;
   /** Override the per-invocation store-request allowance. Defaults to
@@ -203,7 +195,7 @@ export async function sweepAbandonedSeats(opts: {
 }): Promise<SweepResult> {
   const olderThanMs = opts.olderThanMs ?? ABANDON_AFTER_MS;
   const now = opts.nowMs ?? Date.now();
-  const out: SweepResult = { scanned: 0, forfeited: 0, movesPlayed: 0, errored: 0, skippedForeign: 0, clocksStarted: 0 };
+  const out: SweepResult = { scanned: 0, forfeited: 0, seatsTakenOver: 0, errored: 0, skippedForeign: 0, clocksStarted: 0 };
 
   // NB: deliberately NOT server.sweepTurnReminders(). It iterates the same
   // unscoped listActiveGames(), decodes every row with OUR adapter, and marks a
@@ -259,7 +251,7 @@ export async function sweepAbandonedSeats(opts: {
       if (!latest) continue;
 
       // Identify the game BEFORE reading or writing anything about it.
-      let state = decodeRow(opts.codec, latest.state, SCHEMA_VERSION);
+      const state = decodeRow(opts.codec, latest.state, SCHEMA_VERSION);
       if (!state || !isTyrantsState(state)) { out.skippedForeign++; continue; }
 
       const r = meta.reminder;
@@ -276,48 +268,31 @@ export async function sweepAbandonedSeats(opts: {
       }
       if (now - new Date(r.since).getTime() < olderThanMs) continue;
 
-      let actor = tyrantsAdapter.currentActor(state);
+      const actor = tyrantsAdapter.currentActor(state);
       if (actor === null) continue;                  // game over
       if (!isHumanSeat(meta, actor)) continue;       // already a bot seat
       const token = meta.tokens[actor];
       if (!token) continue;                          // nothing to act with
 
-      // Record the forfeit first, so the placing is pinned even if the
-      // takeover moves fail partway through. Idempotent server-side.
+      // Forfeiting is all the sweep has to do. From then on the seat is one of
+      // the adapter's serverDrivenSeats, so the server's own AI driver plays it
+      // inside this very submit, and on every later turn as soon as it comes
+      // round — the rest of the table never waits on it again. (Until framework
+      // 0.50 the sweep played the seat itself here, one turn per daily run,
+      // which left a table waiting a week for each of that seat's turns.)
+      //
+      // A seat that is ALREADY forfeited and yet stuck means that drive failed
+      // (a CPU cut, or the bot erroring on an odd state). A fetch re-drives it.
       const alreadyForfeited = (state.G.forfeitedSeats ?? []).includes(actor);
-      if (!alreadyForfeited) {
-        budget.take(2);   // a submit reads state and writes a snapshot
-        await opts.server.submit(meta.gameId, token, { kind: 'forfeitSeat', seat: actor });
-        out.forfeited++;
-      }
-
-      // Play the seat until the turn passes to someone else (or the game ends).
-      const ctrl = opts.controllers[TAKEOVER_DIFFICULTY] ?? Object.values(opts.controllers)[0];
-      if (!ctrl) continue;
-      const abandonedSeat = actor;
-      for (let i = 0; i < MAX_MOVES_PER_SEAT; i++) {
-        // A takeover move costs a read plus a submit. Stop before overrunning
-        // rather than being cut off mid-move.
-        if (!budget.take(3)) { out.ranOutOfRequests = true; break; }
-        const fresh = await opts.store.getLatest(meta.gameId);
-        if (!fresh) break;
-        const decoded = decodeRow(opts.codec, fresh.state, SCHEMA_VERSION);
-        if (!decoded) break;
-        state = decoded;
-        actor = tyrantsAdapter.currentActor(state);
-        if (actor === null || actor !== abandonedSeat) break;  // turn passed / game over
-        const legal = tyrantsAdapter.legalActions(state, actor);
-        if (!legal.length) break;
-        // Deterministic per-game/turn seed, so re-running a sweep replays the
-        // same choices instead of re-rolling the abandoned seat's game.
-        let seed = 0;
-        for (const ch of `${meta.gameId}:${fresh.turn}:${i}`) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
-        const rng = new Rng(seed);
-        const action = await ctrl.selectAction({ state, actor, adapter: tyrantsAdapter, rng });
-        if (!action) break;
-        await opts.server.submit(meta.gameId, token, action);
-        out.movesPlayed++;
-      }
+      // Reads, the forfeit and the bot's snapshot (each followed by a prune), and
+      // — if this ends the game — resolving it and reporting the rating.
+      if (!budget.take(8)) { out.ranOutOfRequests = true; continue; }
+      const after = alreadyForfeited
+        ? await opts.server.fetch(meta.gameId, token)
+        : await opts.server.submit(meta.gameId, token, { kind: 'forfeitSeat', seat: actor });
+      if (!alreadyForfeited) out.forfeited++;
+      // The forfeit itself is one snapshot; anything past it is the bot's turn.
+      if (after.turn > latest.turn + (alreadyForfeited ? 0 : 1)) out.seatsTakenOver++;
     } catch (e) {
       out.errored++;
       if (!out.sampleError) out.sampleError = `${meta.gameId}: ${e instanceof Error ? e.message : String(e)}`.slice(0, 200);

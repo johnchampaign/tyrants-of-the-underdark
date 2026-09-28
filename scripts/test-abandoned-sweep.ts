@@ -5,11 +5,13 @@
 // four situations that matter:
 //
 //   1. A fresh game is left alone (nobody has been waiting long enough).
-//   2. A seat that has sat on its turn past the window gets forfeited AND
-//      played, so the table moves again.
+//   2. A seat that has sat on its turn past the window gets forfeited, so the
+//      table moves again (2-player: the game ends; 3+: see 9).
 //   3. Re-running the sweep doesn't forfeit the same seat twice.
-//   4. A player who comes back and takes a turn resets the clock — coming back
-//      must not leave them permanently bot-driven.
+//   4. A player who comes back and takes a turn resets the clock, so they
+//      aren't forfeited.
+//   9. 3+ players: the bot plays the forfeited seat at once, and keeps playing
+//      it on every later turn without waiting for another sweep.
 //
 //   npx vite-node scripts/test-abandoned-sweep.ts
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -44,7 +46,7 @@ const tokenOf = (url: string) => url.split('as=')[1]!;
 // request cap; the reserve behaviour is exercised explicitly further down with a
 // deliberately small one.
 const sweep = (nowMs: number, maxSubrequests = 500) =>
-  sweepAbandonedSeats({ server, store, codec, controllers: tyrantsControllers, nowMs, maxSubrequests });
+  sweepAbandonedSeats({ server, store, codec, nowMs, maxSubrequests });
 
 try {
   const T0 = Date.parse('2026-01-01T00:00:00Z');
@@ -72,7 +74,7 @@ try {
   // ---- 1. first sweep only starts the clock ----
   const s1 = await sweep(T0);
   const metaAfter1 = await store.getGameMeta(gameId);
-  if (s1.forfeited !== 0 || s1.movesPlayed !== 0) {
+  if (s1.forfeited !== 0 || s1.seatsTakenOver !== 0) {
     fail(`first sweep acted on a game nobody has been waiting on: ${JSON.stringify(s1)}`);
   } else pass('a fresh game is left alone (the sweep only starts the clock)');
   if (!metaAfter1?.reminder) fail('no inactivity clock was recorded');
@@ -299,7 +301,7 @@ try {
         await server3.submit(g3, tok3[actor], legal[0]);
       }
       const sweep3 = (nowMs: number) =>
-        sweepAbandonedSeats({ server: server3, store: store3, codec, controllers: tyrantsControllers, nowMs, maxSubrequests: 500 });
+        sweepAbandonedSeats({ server: server3, store: store3, codec, nowMs, maxSubrequests: 500 });
       const T = Date.parse('2026-03-01T00:00:00Z');
       await sweep3(T);                                     // starts the clock
       const stalled3 = tyrantsAdapter.currentActor(readState((await store3.getLatest(g3))!.state));
@@ -309,11 +311,34 @@ try {
       else pass(`3-player: abandoned seat ${stalled3} was forfeited`);
       if (tyrantsAdapter.currentActor(after3) === null) fail('3-player: the game ended, but two people are still playing');
       else pass('3-player: the game carries on for the players still at the table');
-      if (r.movesPlayed < 1) fail('3-player: the sweep forfeited the seat but never played it — the table is still stuck');
-      else pass(`3-player: the bot played ${r.movesPlayed} move(s) for the abandoned seat`);
+      if (r.seatsTakenOver !== 1) fail('3-player: the sweep forfeited the seat but the bot never played it — the table is still stuck');
+      else pass('3-player: the server\'s bot played the abandoned seat\'s turn in the same request');
       const movedOn3 = tyrantsAdapter.currentActor(after3);
       if (movedOn3 === stalled3) fail(`3-player: turn is still on the abandoned seat ${stalled3}`);
       else pass(`3-player: turn moved on to seat ${movedOn3}`);
+      const meta3 = await store3.getGameMeta(g3);
+      if (meta3?.identities?.[stalled3!]?.startsWith('ai:')) fail('3-player: the takeover rewrote the seat\'s identity — the walker would drop out of the rating');
+      else pass('3-player: the abandoned seat keeps its identity, so the loss still counts');
+
+      // The fix that needed framework 0.50: the seat is played on EVERY later
+      // turn as soon as it comes round, not once per daily sweep after another
+      // week idle. Play the humans for two full rounds, no sweeps at all.
+      const startTurn = (after3.ctx.turn as number);
+      let stalledAtRest = 0;
+      for (let i = 0; i < 400; i++) {
+        const st = readState((await store3.getLatest(g3))!.state);
+        if ((st.ctx.turn as number) >= startTurn + 6) break;
+        const actor = tyrantsAdapter.currentActor(st);
+        if (actor === null) break;
+        if (actor === stalled3) { stalledAtRest++; break; }
+        const legal = tyrantsAdapter.legalActions(st, actor);
+        if (!legal.length) break;
+        await server3.submit(g3, tok3[actor], legal[0]);
+      }
+      const end3 = readState((await store3.getLatest(g3))!.state);
+      if (stalledAtRest) fail(`3-player: the table came to rest on forfeited seat ${stalled3} — it would wait for the next sweep`);
+      else if ((end3.ctx.turn as number) < startTurn + 6) fail(`3-player: only reached turn ${end3.ctx.turn} from ${startTurn} — the humans' turns never cycled`);
+      else pass(`3-player: two more rounds played (turn ${startTurn} → ${end3.ctx.turn}) and the forfeited seat never held the table up`);
     } finally {
       rmSync(root3, { recursive: true, force: true });
     }

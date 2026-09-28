@@ -33,6 +33,12 @@ import { BASE_ACTION_POWER_COST } from '../game';
 /** The seat-index string '0'..'3'. Matches Object.keys(G.players). */
 export type PlayerId = string;
 
+/** Bot difficulty that finishes a seat whose player gave up or walked away (a
+ *  key in src/online/aiControllers). Deliberately the weaker of the two: a seat
+ *  that has forfeited its placing shouldn't start playing BETTER than the
+ *  person who left, which would distort the remaining players' game. */
+export const TAKEOVER_DIFFICULTY = 'random';
+
 /** The action vocabulary = the bgio moves we expose online. `undo` and
  *  `loadState` are deliberately excluded (local-only / dev rewind). */
 export type TyrantsAction =
@@ -507,9 +513,19 @@ export const tyrantsAdapter: GameAdapter<BgioState, TyrantsAction, PlayerId> = {
   },
 
   // Giving up must work while you wait for someone else's turn. tryApplyAction
-  // still validates it (only when conceding ends the table — see canConcede).
+  // still validates it (see canConcede).
   allowsOutOfTurn(action) {
     return action.kind === 'concede';
+  },
+
+  // A seat that gave up or walked away is finished by the server's bot, played
+  // in the same request as whatever move reaches its turn — so a concession in
+  // a 3-4 player game doesn't stall everyone else. The seat's identity is left
+  // alone, so the player stays in the rating report, ranked last by resultOf.
+  serverDrivenSeats(state) {
+    const out: Partial<Record<PlayerId, string>> = {};
+    for (const seat of state.G.forfeitedSeats ?? []) out[seat as PlayerId] = TAKEOVER_DIFFICULTY;
+    return out;
   },
 
   currentActor(state) {

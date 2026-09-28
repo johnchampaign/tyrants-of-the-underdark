@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { Client } from 'boardgame.io/react';
 import type { BoardProps } from 'boardgame.io/react';
 import { recordPlay } from 'digital-boardgame-framework';
-import { TyrantsGame, BASE_ACTION_POWER_COST, COLORS, SELECTABLE_COLORS, type TyrantsState, type CardRef, type Color, canConcede } from './game';
+import { TyrantsGame, BASE_ACTION_POWER_COST, COLORS, SELECTABLE_COLORS, type TyrantsState, type CardRef, type Color, concedeEndsGame } from './game';
 import { MapView } from './components/MapView';
 import { CardCalibration } from './components/CardCalibration';
 import { CostVerify } from './components/CostVerify';
@@ -1639,7 +1639,10 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
         .map(e => e.payload?.seat ?? ''),
     );
     const iConceded = isOnline && conceded.has(me);
-    const theyConceded = isOnline && !iConceded && conceded.size > 0 && winner[0] === me;
+    // Only when the game ENDED because the others gave up or left — in a 3-4
+    // player game someone can concede and the rest play on to a normal finish.
+    const byForfeit = !!(ctx.gameover as { byForfeit?: boolean } | undefined)?.byForfeit;
+    const theyConceded = isOnline && !iConceded && byForfeit && winner[0] === me;
     return (
       <div style={{ padding: 24, maxWidth: 900, margin: '0 auto' }}>
         {(iConceded || theyConceded) && (
@@ -1657,7 +1660,9 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
             <div style={{ marginTop: 8, fontSize: 18, opacity: 0.85 }}>
               {iConceded
                 ? 'You gave up. You are ranked last.'
-                : 'Your opponent gave up — the game is yours.'}
+                : ctx.numPlayers === 2
+                  ? `Your opponent ${conceded.size ? 'gave up' : 'left the game'} — the game is yours.`
+                  : 'Everyone else gave up or left — the game is yours.'}
             </div>
           </div>
         )}
@@ -1909,25 +1914,29 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
           style={{ padding: '6px 14px', background: '#3a2055', color: '#e6e1f2', border: '1px solid #5a3380', borderRadius: 4, cursor: 'pointer' }}>
           Report a problem
         </button>
+        {isOnline && !ctx.gameover && (G.forfeitedSeats ?? []).includes(me) && (
+          <span style={{ padding: '6px 4px', color: '#c9a0a0', fontSize: 13 }}
+            title="You're ranked last. The other players are finishing the game; you can keep watching.">
+            You gave up — a bot is playing your seat.
+          </span>
+        )}
         {isOnline && !ctx.gameover && !(G.forfeitedSeats ?? []).includes(me) && (() => {
-          // Give up (#111). Offered only when conceding ENDS the table — a
-          // 2-player game, or one where everyone else is a bot. With other
-          // people still playing, the seat would have to go to a bot, and a
-          // forfeited seat is currently only played by the daily sweep after a
-          // week idle, so the engine refuses it; say why rather than hide it.
-          const allowed = canConcede(G, me);
+          // Give up (#111). Two-player (or everyone else a bot), the game ends.
+          // With other people still playing, the server's bot finishes the
+          // seat so they can play on — the confirmation says which.
+          const ends = concedeEndsGame(G, me);
+          const what = ends
+            ? 'The game ends now and you are ranked last.'
+            : 'You are ranked last, and a bot plays out your seat so everyone else can finish.';
           return (
-            <button disabled={!allowed}
+            <button
               onClick={() => {
-                if (!confirm('Give up this game?\n\nThe game ends now and you are ranked last. If the game is ranked, it counts as a loss.\n\nThis can\'t be undone.')) return;
+                if (!confirm(`Give up this game?\n\n${what} If the game is ranked, it counts as a loss.\n\nThis can't be undone.`)) return;
                 (moves as unknown as { concede: () => void }).concede();
               }}
-              title={allowed
-                ? 'Concede this game. It ends now and you are ranked last.'
-                : 'Giving up isn\'t available yet in games where other people are still playing: your seat would have to be handed to a bot, and that can\'t happen promptly yet.'}
-              style={{ padding: '6px 14px', background: allowed ? '#5a2a2a' : 'transparent',
-                color: allowed ? '#f2dede' : '#8a8296', border: '1px solid #6a3030', borderRadius: 4,
-                cursor: allowed ? 'pointer' : 'not-allowed' }}>
+              title={`Concede this game. ${what}`}
+              style={{ padding: '6px 14px', background: '#5a2a2a', color: '#f2dede',
+                border: '1px solid #6a3030', borderRadius: 4, cursor: 'pointer' }}>
               Give up
             </button>
           );

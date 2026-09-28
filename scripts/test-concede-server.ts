@@ -67,20 +67,53 @@ async function main() {
     check('server: ...and the table ends rather than bots playing on', (await server.fetch(gameId, me)).gameOver === true);
   }
 
-  // ---- two people and two AIs: refused ----
+  // ---- two people and two AIs: the server's bot takes the seat ----
+  // The case that needed framework 0.50 (adapter.serverDrivenSeats): the game
+  // must go on for the other person, with the conceded seat played at once on
+  // each of its turns — never left waiting for the daily sweep.
   {
-    const server = makeServer();
+    const root = mkdtempSync(join(tmpdir(), 'totu-concede-'));
+    roots.push(root);
+    const store = new FsStore(root);
+    const server = new GameServer<BgioState, TyrantsAction, PlayerId>({
+      adapter: tyrantsAdapter, codec: snapshotCodec(), store,
+      aiControllers: tyrantsControllers, gameUrl: (g, t) => `http://test/${g}?as=${t}`,
+    });
     const { gameId, invites } = await server.createGame({
       initialState: initialBgioState(4, { ...all3, botSeats: ['2', '3'] }),
       players: ['0', '1', '2', '3'] as PlayerId[],
       ai: { '2': 'standard', '3': 'standard' } as never,
     });
     const me = tokenOf(invites['0' as PlayerId]);
+    const other = tokenOf(invites['1' as PlayerId]);
+    const actorNow = async () => tyrantsAdapter.currentActor((await server.fetch(gameId, other)).view as BgioState);
+
     let err = '';
     try { await server.submit(gameId, me, concede); } catch (e) { err = String((e as Error).message ?? e); }
-    check('server: refused while another person is still playing', err !== '');
-    const v = await server.fetch(gameId, me);
-    check('server: ...the game carries on untouched', !v.gameOver && !((v.view as BgioState).G.forfeitedSeats ?? []).length);
+    check('server: giving up is accepted while another person is still playing', err === '');
+    const v = await server.fetch(gameId, other);
+    check('server: ...the game carries on', !v.gameOver);
+    check('server: ...the seat is recorded as given up', ((v.view as BgioState).G.forfeitedSeats ?? []).join() === '0');
+    check('server: ...the bot played it at once — the table rests on the other person', (await actorNow()) === '1');
+    const meta = await store.getGameMeta(gameId);
+    check('server: ...and the seat keeps its identity (still in the rating)', !(meta?.identities?.['0'] ?? '').startsWith('ai:'));
+
+    // The other person plays two full rounds. Every time the table comes to
+    // rest it must be on them: the given-up seat is played as soon as it's up.
+    const start = (v.view as BgioState).ctx.turn as number;
+    let heldUp = false, turn = start;
+    for (let i = 0; i < 400 && turn < start + 8; i++) {
+      const cur = await server.fetch(gameId, other);
+      const st = cur.view as BgioState;
+      turn = st.ctx.turn as number;
+      if (cur.gameOver) break;
+      const actor = tyrantsAdapter.currentActor(st);
+      if (actor !== '1') { heldUp = true; break; }
+      const legal = await server.legalActions(gameId, other);
+      if (!legal.length) break;
+      await server.submit(gameId, other, legal[0]);
+    }
+    check(`server: two more rounds (turn ${start} → ${turn}), never waiting on the given-up seat`, !heldUp && turn >= start + 8);
   }
 
   // ---- the real create route records bot seats ----

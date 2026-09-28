@@ -234,10 +234,11 @@ export interface TyrantsState {
    *  restore-points server-side is pure waste (#104 follow-up). */
   _online?: boolean;
 
-  /** Seats whose player walked away and had a bot finish their turns for them.
-   *  Recorded by the `forfeitSeat` move (server-side sweep only — never offered
-   *  in legalActions, so no player can forfeit anyone, including themselves, by
-   *  accident). Purely a scoring/placement marker: the seat keeps playing so the
+  /** Seats whose player gave up (`concede`) or walked away (`forfeitSeat`,
+   *  recorded by the server-side sweep). Neither is ever offered in
+   *  legalActions, so no bot can choose them and no player does so by accident.
+   *  Online, the server's bot plays these seats from then on (the adapter's
+   *  serverDrivenSeats). For scoring it is a placement marker: the seat keeps playing so the
    *  table isn't stuck, but it can never win and always ranks below every seat
    *  that played its own game. Without this, walking away from a losing position
    *  would be the cheapest way to avoid recording the loss. */
@@ -483,18 +484,22 @@ export function tableIsOver(G: TyrantsState): boolean {
   return false;
 }
 
-/** Whether `seat` may give up right now.
+/** Whether `seat` may give up right now: any seat that hasn't already.
  *
- *  Only when conceding ENDS the table (see tableIsOver). In a 3-4 player game
- *  where other people are still playing, the conceded seat would have to be
- *  handed to a bot — and today a forfeited seat is only played by the daily
- *  abandoned-seat sweep, after its turn has sat idle for 7 days. Allowing a
- *  concession there would stall everyone else for about a week every round, so
- *  it is refused here (not merely hidden in the UI) until forfeited seats can
- *  be played promptly. */
+ *  What follows depends on the table. If conceding leaves nobody to play for
+ *  (see tableIsOver), the game ends. Otherwise — a 3-4 player game with other
+ *  people still in — the seat stays in the game and the server's bot finishes
+ *  it, straight away on each of its turns (the adapter's serverDrivenSeats), so
+ *  nobody else is kept waiting. */
 export function canConcede(G: TyrantsState, seat: string): boolean {
   if (!G.players[seat]) return false;
-  if ((G.forfeitedSeats ?? []).includes(seat)) return false;
+  return !(G.forfeitedSeats ?? []).includes(seat);
+}
+
+/** Whether giving up would end the game outright, as opposed to handing the
+ *  seat to a bot while everyone else plays on. The UI words its confirmation
+ *  from this. */
+export function concedeEndsGame(G: TyrantsState, seat: string): boolean {
   const after = { ...G, forfeitedSeats: [...(G.forfeitedSeats ?? []), seat] };
   return tableIsOver(after);
 }
@@ -1126,7 +1131,9 @@ export const TyrantsGame: Game<TyrantsState> = {
      *  with the current player so boardgame.io accepts it on anyone's turn — the
      *  same technique resolveChoice uses. So nobody can concede on another
      *  seat's behalf. The seat forfeits its placing exactly as an abandoned one
-     *  does (ranked last, counted as a loss); endIf then closes the table. */
+     *  does (ranked last, counted as a loss). If that leaves nobody to play
+     *  for, endIf closes the table; otherwise the server's bot plays the seat
+     *  from here on (tyrantsAdapter.serverDrivenSeats). */
     concede: ({ G }, seat: string) => {
       if (!canConcede(G, seat)) return INVALID_MOVE;
       if (!G.forfeitedSeats) G.forfeitedSeats = [];

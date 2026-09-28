@@ -96,7 +96,7 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
   }
 
   const result = await handleApi(server, request.method, url.pathname, url.searchParams, body,
-    { store, codec, controllers: tyrantsControllers });
+    { store, codec });
   return new Response(JSON.stringify(result.body), {
     status: result.status,
     headers: { 'Content-Type': 'application/json' },

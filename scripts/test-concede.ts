@@ -7,9 +7,10 @@
 //   3. Nobody can concede for someone else: the action carries no seat, and
 //      the adapter uses the authenticated submitter even if one is smuggled in.
 //   4. When every seat left playing is a bot, the table ends.
-//   5. In a 3-4 player game with other people still playing, a concession is
-//      REFUSED — the conceded seat would sit idle for a week per round, since
-//      forfeited seats are only played by the daily abandoned-seat sweep.
+//   5. In a 3-4 player game with other people still playing, the game goes
+//      on: the seat is forfeited and handed to the server's bot
+//      (serverDrivenSeats), keeping its place last. When the last other
+//      person gives up too, only bots remain and the table ends.
 //   6. It is never offered in legalActions (a bot must never choose it), and it
 //      is the only action allowed out of turn.
 //   7. An abandoned seat forfeited by the sweep ends a 2-player game the same
@@ -81,15 +82,28 @@ function pastSetup(s: BgioState): BgioState {
   if (r.ok) check('...and the table ends', !!r.state.ctx.gameover);
 }
 
-// ---- 5. refused while other people are still playing ----
+// ---- 5. other people still playing: a bot takes the seat ----
 {
+  const drives = (st: BgioState) => A.serverDrivenSeats!(st) as Record<string, string>;
   const s = pastSetup(initialBgioState(4, { activeSections: ['left', 'center', 'right'], botSeats: ['2', '3'] }));
+  check('before anyone gives up, no seat is handed to the server', Object.keys(drives(s)).length === 0);
   const r = A.tryApplyAction!(s, concede, '0');
-  check('4P with another person still playing: giving up is refused', !r.ok);
-  check('...nothing is recorded', !(s.G.forfeitedSeats ?? []).length && !s.ctx.gameover);
+  check('4P with another person still playing: giving up is accepted', r.ok);
+  if (r.ok) {
+    check('...the game carries on', !r.state.ctx.gameover && A.currentActor(r.state) !== null);
+    check('...and the seat is handed to the server\'s bot', JSON.stringify(drives(r.state)) === '{"0":"random"}');
+    const two = A.tryApplyAction!(r.state, concede, '1');
+    check('when the last other person gives up, only bots remain — the table ends', two.ok && !!two.state.ctx.gameover);
+    if (two.ok) {
+      const res = A.result!(two.state);
+      check('...a bot wins and both people who gave up rank last',
+        !!res && ['2', '3'].includes(res.winners[0]) && res.ranking!.slice(2).sort().join() === '0,1');
+    }
+  }
 
   const legacy = pastSetup(initialBgioState(3, { activeSections: ['left', 'center'] }));
-  check('3P with bot seats unknown (older game): refused', !A.tryApplyAction!(legacy, concede, '0').ok);
+  const lr = A.tryApplyAction!(legacy, concede, '0');
+  check('3P with bot seats unknown (older game): accepted, the game carries on', lr.ok && !lr.state.ctx.gameover);
 }
 
 // ---- 6. never offered; the only out-of-turn action ----
@@ -122,9 +136,11 @@ function pastSetup(s: BgioState): BgioState {
 
 // ---- already out ----
 {
-  const s = pastSetup(initialBgioState(4, { activeSections: ['left', 'center', 'right'], botSeats: ['1', '2', '3'] }));
+  // A game that carries on after the first concession, so a refusal can only
+  // come from the seat having already given up, not from the game being over.
+  const s = pastSetup(initialBgioState(4, { activeSections: ['left', 'center', 'right'] }));
   const once = A.tryApplyAction!(s, concede, '0');
-  check('a seat cannot give up twice', once.ok && !A.tryApplyAction!(once.state, concede, '0').ok);
+  check('a seat cannot give up twice', once.ok && !once.state.ctx.gameover && !A.tryApplyAction!(once.state, concede, '0').ok);
 }
 
 console.log(ok ? '\nALL CONCEDE TESTS PASSED' : '\nFAILURES PRESENT');

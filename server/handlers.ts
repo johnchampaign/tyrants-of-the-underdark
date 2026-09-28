@@ -9,7 +9,7 @@
 // The seats are the bgio seat-index strings '0'..'3'.
 
 import type { GameServer, ReportSubmission, SnapshotStore, ReportFilter } from 'digital-boardgame-framework/server';
-import type { Codec, PlayerController } from 'digital-boardgame-framework';
+import type { Codec } from 'digital-boardgame-framework';
 import { sweepAbandonedSeats } from './sweep';
 import type { BgioState, TyrantsAction, PlayerId } from '../src/adapter/tyrantsAdapter';
 import { initialBgioState } from '../src/adapter/tyrantsAdapter';
@@ -48,7 +48,6 @@ function activeSectionsFor(numPlayers: number): Array<'left' | 'center' | 'right
 export interface SweepDeps {
   store: SnapshotStore;
   codec: Codec<BgioState>;
-  controllers: Record<string, PlayerController<BgioState, TyrantsAction, PlayerId>>;
 }
 
 export async function handleApi(
@@ -209,7 +208,6 @@ export async function handleApi(
         server,
         store: sweepDeps.store,
         codec: sweepDeps.codec,
-        controllers: sweepDeps.controllers,
       });
       return { status: 200, body: result };
     }
