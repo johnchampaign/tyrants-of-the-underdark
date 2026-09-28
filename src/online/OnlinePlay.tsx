@@ -44,6 +44,8 @@ function makeMovesProxy(
       submit({ kind: 'returnEnemySpy', siteId, targetColor: targetColor as any }),
     resolveChoice: (response: unknown) => submit({ kind: 'resolveChoice', response }),
     endTurn: () => submit({ kind: 'endTurn' }),
+    // Give up (#111). No seat argument: the server concedes whoever submitted.
+    concede: () => submit({ kind: 'concede' }),
     // Hotseat-only rewind controls — no-ops online. Board disables/hides their
     // entry points when isOnline (undo button is gated on G.undoStack, which is
     // stripped by viewFor, so it's always disabled online anyway).

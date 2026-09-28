@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { Client } from 'boardgame.io/react';
 import type { BoardProps } from 'boardgame.io/react';
 import { recordPlay } from 'digital-boardgame-framework';
-import { TyrantsGame, BASE_ACTION_POWER_COST, COLORS, SELECTABLE_COLORS, type TyrantsState, type CardRef, type Color } from './game';
+import { TyrantsGame, BASE_ACTION_POWER_COST, COLORS, SELECTABLE_COLORS, type TyrantsState, type CardRef, type Color, canConcede } from './game';
 import { MapView } from './components/MapView';
 import { CardCalibration } from './components/CardCalibration';
 import { CostVerify } from './components/CostVerify';
@@ -1622,10 +1622,45 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
   // End-of-game scoreboard.
   if (ctx.gameover && !reviewingBoard) {
     const scores = scoreAll(G);
-    const ranked = Object.entries(scores).sort((a, b) => b[1].total - a[1].total);
+    // Seats that gave up or left forfeit their placing: they rank below every
+    // seat that played its own game and can never be the winner — the same rule
+    // the server's result uses. Ranking on raw score alone named a player who
+    // conceded while ahead as the winner.
+    const out = new Set(G.forfeitedSeats ?? []);
+    const byScore = (a: [string, { total: number }], b: [string, { total: number }]) => b[1].total - a[1].total;
+    const ranked = [
+      ...Object.entries(scores).filter(([pid]) => !out.has(pid)).sort(byScore),
+      ...Object.entries(scores).filter(([pid]) => out.has(pid)).sort(byScore),
+    ];
     const winner = ranked[0];
+    const conceded = new Set(
+      (G.log as unknown as Array<string | { kind?: string; payload?: { seat?: string } }>)
+        .filter((e): e is { kind?: string; payload?: { seat?: string } } => typeof e !== 'string' && e.kind === 'seat.concede')
+        .map(e => e.payload?.seat ?? ''),
+    );
+    const iConceded = isOnline && conceded.has(me);
+    const theyConceded = isOnline && !iConceded && conceded.size > 0 && winner[0] === me;
     return (
       <div style={{ padding: 24, maxWidth: 900, margin: '0 auto' }}>
+        {(iConceded || theyConceded) && (
+          <div style={{
+            margin: '0 0 20px', padding: '40px 24px', borderRadius: 10, textAlign: 'center',
+            background: iConceded
+              ? 'radial-gradient(ellipse at center, #4a1c1c 0%, #1a0a0a 75%)'
+              : 'radial-gradient(ellipse at center, #3d3410 0%, #1a1506 75%)',
+            border: `2px solid ${iConceded ? '#7a2e2e' : '#b8952a'}`,
+          }}>
+            <div style={{ fontSize: 56, fontWeight: 800, letterSpacing: 2,
+              color: iConceded ? '#e0a0a0' : '#ffd966', textShadow: '0 4px 24px rgba(0,0,0,0.8)' }}>
+              {iConceded ? 'Defeat' : 'Victory'}
+            </div>
+            <div style={{ marginTop: 8, fontSize: 18, opacity: 0.85 }}>
+              {iConceded
+                ? 'You gave up. You are ranked last.'
+                : 'Your opponent gave up — the game is yours.'}
+            </div>
+          </div>
+        )}
         <h1 style={{ margin: 0 }}>Game Over</h1>
         <button onClick={() => setReviewingBoard(true)}
           title="Go back to the finished board — the map, the log and every pile, exactly as the game ended."
@@ -1701,7 +1736,14 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
               );
               return (
                 <tr key={pid} style={{ borderBottom: '1px solid #1a1228' }}>
-                  <td style={{ padding: 4 }}>P{Number(pid) + 1} ({G.players[pid].color})</td>
+                  <td style={{ padding: 4 }}>
+                    P{Number(pid) + 1} ({G.players[pid].color})
+                    {out.has(pid) && (
+                      <span style={{ marginLeft: 6, fontSize: 11, opacity: 0.7 }}>
+                        {conceded.has(pid) ? '· gave up' : '· left the game'}
+                      </span>
+                    )}
+                  </td>
                   {cell(s.sites, sitesTip)}
                   {cell(s.totalControl, totalCtrlTip)}
                   {trophiesCell}
@@ -1867,6 +1909,29 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
           style={{ padding: '6px 14px', background: '#3a2055', color: '#e6e1f2', border: '1px solid #5a3380', borderRadius: 4, cursor: 'pointer' }}>
           Report a problem
         </button>
+        {isOnline && !ctx.gameover && !(G.forfeitedSeats ?? []).includes(me) && (() => {
+          // Give up (#111). Offered only when conceding ENDS the table — a
+          // 2-player game, or one where everyone else is a bot. With other
+          // people still playing, the seat would have to go to a bot, and a
+          // forfeited seat is currently only played by the daily sweep after a
+          // week idle, so the engine refuses it; say why rather than hide it.
+          const allowed = canConcede(G, me);
+          return (
+            <button disabled={!allowed}
+              onClick={() => {
+                if (!confirm('Give up this game?\n\nThe game ends now and you are ranked last. If the game is ranked, it counts as a loss.\n\nThis can\'t be undone.')) return;
+                (moves as unknown as { concede: () => void }).concede();
+              }}
+              title={allowed
+                ? 'Concede this game. It ends now and you are ranked last.'
+                : 'Giving up isn\'t available yet in games where other people are still playing: your seat would have to be handed to a bot, and that can\'t happen promptly yet.'}
+              style={{ padding: '6px 14px', background: allowed ? '#5a2a2a' : 'transparent',
+                color: allowed ? '#f2dede' : '#8a8296', border: '1px solid #6a3030', borderRadius: 4,
+                cursor: allowed ? 'pointer' : 'not-allowed' }}>
+              Give up
+            </button>
+          );
+        })()}
         <button onClick={async () => {
           if (!confirm('Start a new game? Current progress will be lost.')) return;
           // Archive the current playthrough before discarding it, so it

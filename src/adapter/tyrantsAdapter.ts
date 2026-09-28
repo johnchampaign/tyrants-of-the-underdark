@@ -48,7 +48,11 @@ export type TyrantsAction =
   // Server-side only (the abandoned-seat sweep). Never returned by
   // legalActions, so no client can reach it; the server validates via
   // tryApplyAction, which accepts it.
-  | { kind: 'forfeitSeat'; seat: PlayerId };
+  | { kind: 'forfeitSeat'; seat: PlayerId }
+  // A player gives up. Deliberately carries NO seat: the adapter uses the
+  // authenticated submitter, so no one can concede for someone else. Not in
+  // legalActions — a bot must never pick it — and allowed out of turn.
+  | { kind: 'concede' };
 
 /** boardgame.io's full client/transport state. We treat it as opaque-ish: the
  *  adapter only reaches into `.G` and `.ctx`; `plugins` etc. ride along. */
@@ -105,7 +109,7 @@ function markOnline<T>(G: T): T {
   return G;
 }
 const onlineSetup = (
-  setupData?: { halfDecks?: string[]; activeSections?: Array<"left" | "center" | "right">; humanColor?: Color; seatColors?: Color[] },
+  setupData?: { halfDecks?: string[]; activeSections?: Array<"left" | "center" | "right">; humanColor?: Color; seatColors?: Color[]; botSeats?: string[] },
 ) => (sa: Parameters<NonNullable<typeof TyrantsGame.setup>>[0]) =>
   markOnline(TyrantsGame.setup!(sa, setupData));
 
@@ -123,7 +127,7 @@ function reducer(): AnyReducer {
  *  and the eventual server createGame. */
 export function initialBgioState(
   numPlayers: number,
-  setupData?: { halfDecks?: string[]; activeSections?: Array<'left' | 'center' | 'right'>; humanColor?: Color; seatColors?: Color[] },
+  setupData?: { halfDecks?: string[]; activeSections?: Array<'left' | 'center' | 'right'>; humanColor?: Color; seatColors?: Color[]; botSeats?: string[] },
 ): BgioState {
   const wrapped = setupData
     ? { ...ONLINE_GAME, setup: onlineSetup(setupData) }
@@ -153,6 +157,9 @@ function toBgioAction(action: TyrantsAction, actor: PlayerId, currentPlayer: str
     // of who submitted it, so this is safe and fixes the cross-player lock (#91).
     case 'resolveChoice':       return mk('resolveChoice', [action.response], currentPlayer);
     case 'forfeitSeat':       return mk('forfeitSeat', [action.seat]);
+    // Seat = the authenticated actor, never the request. Stamped with the
+    // current player so boardgame.io accepts it while someone else is on turn.
+    case 'concede':             return mk('concede', [actor], currentPlayer);
     case 'endTurn':             return mk('endTurn', []);
   }
 }
@@ -497,6 +504,12 @@ export const tyrantsAdapter: GameAdapter<BgioState, TyrantsAction, PlayerId> = {
 
   legalActions(state, actor) {
     return enumerateLegal(state, actor);
+  },
+
+  // Giving up must work while you wait for someone else's turn. tryApplyAction
+  // still validates it (only when conceding ends the table — see canConcede).
+  allowsOutOfTurn(action) {
+    return action.kind === 'concede';
   },
 
   currentActor(state) {

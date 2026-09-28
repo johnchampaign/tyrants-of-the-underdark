@@ -243,6 +243,13 @@ export interface TyrantsState {
    *  would be the cheapest way to avoid recording the loss. */
   forfeitedSeats?: string[];
 
+  /** Seats driven by the server's AI, recorded at game creation (online only;
+   *  undefined for hotseat and for games created before this existed). The
+   *  engine otherwise has no idea which seats are people, and it needs to: a
+   *  table where every seat still playing is a bot has no one left to play for,
+   *  so it should end rather than have bots finish a game nobody is watching. */
+  botSeats?: string[];
+
   /** Player ID (as a string seat index) chosen at setup to act first. Drives
    *  turn.order.first; the human is always seated at "0" but doesn't necessarily
    *  go first. */
@@ -448,12 +455,60 @@ function checkEndGameTriggers(G: TyrantsState, ctx: { turn: number }) {
   }
 }
 
+/** Seats still playing their own game — not conceded, not abandoned. */
+export function liveSeats(G: TyrantsState): string[] {
+  const out = new Set(G.forfeitedSeats ?? []);
+  return Object.keys(G.players).filter(p => !out.has(p));
+}
+
+/** Whether a table with forfeits has no meaningful game left to finish.
+ *
+ *  - At most one seat still playing: in a 2-player game one concession means
+ *    the other player has won. Making them play the rest out against a bot,
+ *    with the result already fixed, is pointless.
+ *  - Every seat still playing is a bot: no person is left to play for.
+ *
+ *  Applies to abandoned seats too (the sweep's forfeitSeat), which changes one
+ *  existing behaviour on purpose: a 2-player game whose opponent walked away
+ *  now ends in the remaining player's favour when the seat is forfeited,
+ *  instead of making them finish against a bot. */
+export function tableIsOver(G: TyrantsState): boolean {
+  if (!(G.forfeitedSeats?.length)) return false;
+  const live = liveSeats(G);
+  if (live.length <= 1) return true;
+  if (G.botSeats?.length) {
+    const bots = new Set(G.botSeats);
+    if (live.every(p => bots.has(p))) return true;
+  }
+  return false;
+}
+
+/** Whether `seat` may give up right now.
+ *
+ *  Only when conceding ENDS the table (see tableIsOver). In a 3-4 player game
+ *  where other people are still playing, the conceded seat would have to be
+ *  handed to a bot — and today a forfeited seat is only played by the daily
+ *  abandoned-seat sweep, after its turn has sat idle for 7 days. Allowing a
+ *  concession there would stall everyone else for about a week every round, so
+ *  it is refused here (not merely hidden in the UI) until forfeited seats can
+ *  be played promptly. */
+export function canConcede(G: TyrantsState, seat: string): boolean {
+  if (!G.players[seat]) return false;
+  if ((G.forfeitedSeats ?? []).includes(seat)) return false;
+  const after = { ...G, forfeitedSeats: [...(G.forfeitedSeats ?? []), seat] };
+  return tableIsOver(after);
+}
+
 export const TyrantsGame: Game<TyrantsState> = {
   name: 'tyrants-of-the-underdark',
 
   // The game ends after the round containing the trigger turn finishes (rulebook p.14).
   // We compute the last turn number of that round and bail when ctx.turn exceeds it.
   endIf: ({ G, ctx }) => {
+    // A table that has lost its players ends at once, before the normal
+    // end-game check: when at most one seat is still playing its own game, or
+    // when every seat still playing is a bot. See tableIsOver.
+    if (tableIsOver(G)) return { ended: true, byForfeit: true };
     if (G.endGameTriggeredAtTurn === null) return undefined;
     const N = ctx.numPlayers;
     const triggerRound = Math.floor((G.endGameTriggeredAtTurn - 1) / N);
@@ -465,7 +520,7 @@ export const TyrantsGame: Game<TyrantsState> = {
     return undefined;
   },
 
-  setup: ({ ctx, random }, setupData?: { halfDecks?: string[]; activeSections?: Array<'left'|'center'|'right'>; humanColor?: Color; seatColors?: Color[] }) => {
+  setup: ({ ctx, random }, setupData?: { halfDecks?: string[]; activeSections?: Array<'left'|'center'|'right'>; humanColor?: Color; seatColors?: Color[]; botSeats?: string[] }) => {
     const rng = () => random!.Number();
     const halfDecks = setupData?.halfDecks?.length === 2 ? setupData.halfDecks : ['drow', 'dragons'];
     // Rulebook p.5: limit the board to the sections in play. 2P = center only,
@@ -556,7 +611,9 @@ export const TyrantsGame: Game<TyrantsState> = {
     const firstSeat = Math.floor(rng() * ctx.numPlayers);
     const startLog = `Game started. P${firstSeat + 1} (${colorOrder[firstSeat]}) goes first.`;
 
+    const botSeats = (setupData?.botSeats ?? []).filter(b => Number(b) >= 0 && Number(b) < ctx.numPlayers);
     return {
+      ...(botSeats.length ? { botSeats } : {}),
       firstPlayerId: String(firstSeat),
       market: { deck: marketDeck, row },
       // Permanent stacks per rulebook components (page 2): 15 of each.
@@ -1064,6 +1121,20 @@ export const TyrantsGame: Game<TyrantsState> = {
      *  Records the flag and nothing else: the turn does NOT pass and the game
      *  does NOT end, because the point is for the seat to keep playing so the
      *  remaining players can finish. */
+    /** A player gives up (#111). `seat` is NOT taken from the request: the
+     *  adapter fills it in from the authenticated submitter and stamps the move
+     *  with the current player so boardgame.io accepts it on anyone's turn — the
+     *  same technique resolveChoice uses. So nobody can concede on another
+     *  seat's behalf. The seat forfeits its placing exactly as an abandoned one
+     *  does (ranked last, counted as a loss); endIf then closes the table. */
+    concede: ({ G }, seat: string) => {
+      if (!canConcede(G, seat)) return INVALID_MOVE;
+      if (!G.forfeitedSeats) G.forfeitedSeats = [];
+      G.forfeitedSeats.push(seat);
+      Mechanics.log(G, `P${Number(seat) + 1} gave up.`,
+        { kind: 'seat.concede', payload: { seat }, side: seat });
+    },
+
     forfeitSeat: ({ G, playerID }, seat: string) => {
       // A seat may only forfeit ITSELF. Keeping this move out of legalActions
       // hides it from the UI but does not stop a crafted request: the server

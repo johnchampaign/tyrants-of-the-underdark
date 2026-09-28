@@ -117,12 +117,17 @@ export async function handleApi(
           seatColors = raw as Color[];
         }
         const players: PlayerId[] = Array.from({ length: numPlayers }, (_, i) => String(i));
+        // Record which seats are bots IN the game state: the engine needs it to
+        // end a table where only bots are left playing (e.g. the one person in a
+        // game against AI gives up) — it can't see the framework's identities.
+        const botSeats = Object.keys(b.ai ?? {}).filter(seat => players.includes(seat as PlayerId));
         const r = await server.createGame({
           initialState: initialBgioState(numPlayers, {
             activeSections: activeSectionsFor(numPlayers),
             ...(halfDecks ? { halfDecks } : {}),
             ...(humanColor ? { humanColor } : {}),
             ...(seatColors ? { seatColors } : {}),
+            ...(botSeats.length ? { botSeats } : {}),
           }),
           players,
           ...(b.ai ? { ai: b.ai } : {}),

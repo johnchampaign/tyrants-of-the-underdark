@@ -88,11 +88,20 @@ try {
   if (!(afterState.G.forfeitedSeats ?? []).includes(stalledActor!)) {
     fail('forfeit was not recorded in game state');
   } else pass('forfeit is recorded in the game state the result reads');
-  if (s2.movesPlayed < 1) fail('the sweep forfeited the seat but never played it — the table is still stuck');
-  else pass(`bot played ${s2.movesPlayed} move(s) for the abandoned seat, unsticking the table`);
-  const movedOn = tyrantsAdapter.currentActor(afterState);
-  if (movedOn === stalledActor) fail(`turn is still on the abandoned seat ${stalledActor}`);
-  else pass(`turn moved on to seat ${movedOn}`);
+  // A 2-player table whose opponent walked away already has its result: the
+  // player who stayed wins. Forfeiting the abandoned seat now ENDS the game
+  // (tableIsOver) instead of making the survivor finish against a bot. The
+  // bot takeover itself is still exercised — by the 3-player table in section
+  // 9, where the game has to keep going.
+  if (tyrantsAdapter.currentActor(afterState) !== null) {
+    fail('2-player: the seat was forfeited but the game did not end — the table is still stuck');
+  } else pass('2-player: forfeiting the abandoned seat ends the game, so the table is no longer stuck');
+  {
+    const res = tyrantsAdapter.result!(afterState);
+    const stayer = stalledActor === '0' ? '1' : '0';
+    if (!res || res.winners.join() !== stayer) fail(`expected the player who stayed (seat ${stayer}) to win, got ${JSON.stringify(res?.winners)}`);
+    else pass(`2-player: the player who stayed (seat ${stayer}) wins`);
+  }
 
   // ---- 3. idempotent ----
   const s3 = await sweep(T0 + ABANDON_AFTER_MS + 120_000);
@@ -259,6 +268,54 @@ try {
       pass('(allowance was not exhausted — reserve untested this run, but nothing starved)');
     } else {
       pass('allowance genuinely ran out, and the newcomer still got through');
+    }
+  }
+
+  // ---- 9. 3+ players: the bot really does take the abandoned seat's turns ----
+  // With other people still playing, a forfeited seat must be played for the
+  // table to move. A separate store, so this game can't shift the candidate
+  // counts sections 6-8 assert on.
+  {
+    const root3 = mkdtempSync(join(tmpdir(), 'totu-sweep3-'));
+    try {
+      const store3 = new FsStore(root3);
+      const server3 = new GameServer<BgioState, TyrantsAction, PlayerId>({
+        adapter: tyrantsAdapter, codec, store: store3, aiControllers: tyrantsControllers,
+        gameUrl: (g, t) => `http://test/${g}?as=${t}`,
+      });
+      const { gameId: g3, invites: inv3 } = await server3.createGame({
+        initialState: initialBgioState(3, { activeSections: ['left', 'center'] }),
+        players: ['0', '1', '2'] as PlayerId[],
+      });
+      const tok3: Record<string, string> = Object.fromEntries(
+        (['0', '1', '2'] as const).map(p => [p, tokenOf(inv3[p as PlayerId])]));
+      for (let i = 0; i < 80; i++) {
+        const st = readState((await store3.getLatest(g3))!.state);
+        if (!st.G.setupPhase) break;
+        const actor = tyrantsAdapter.currentActor(st);
+        if (actor === null) break;
+        const legal = tyrantsAdapter.legalActions(st, actor);
+        if (!legal.length) break;
+        await server3.submit(g3, tok3[actor], legal[0]);
+      }
+      const sweep3 = (nowMs: number) =>
+        sweepAbandonedSeats({ server: server3, store: store3, codec, controllers: tyrantsControllers, nowMs, maxSubrequests: 500 });
+      const T = Date.parse('2026-03-01T00:00:00Z');
+      await sweep3(T);                                     // starts the clock
+      const stalled3 = tyrantsAdapter.currentActor(readState((await store3.getLatest(g3))!.state));
+      const r = await sweep3(T + ABANDON_AFTER_MS + 60_000);
+      const after3 = readState((await store3.getLatest(g3))!.state);
+      if (r.forfeited !== 1) fail(`3-player: expected one forfeit, got ${JSON.stringify(r)}`);
+      else pass(`3-player: abandoned seat ${stalled3} was forfeited`);
+      if (tyrantsAdapter.currentActor(after3) === null) fail('3-player: the game ended, but two people are still playing');
+      else pass('3-player: the game carries on for the players still at the table');
+      if (r.movesPlayed < 1) fail('3-player: the sweep forfeited the seat but never played it — the table is still stuck');
+      else pass(`3-player: the bot played ${r.movesPlayed} move(s) for the abandoned seat`);
+      const movedOn3 = tyrantsAdapter.currentActor(after3);
+      if (movedOn3 === stalled3) fail(`3-player: turn is still on the abandoned seat ${stalled3}`);
+      else pass(`3-player: turn moved on to seat ${movedOn3}`);
+    } finally {
+      rmSync(root3, { recursive: true, force: true });
     }
   }
 
