@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Client } from 'boardgame.io/react';
 import type { BoardProps } from 'boardgame.io/react';
-import { recordPlay } from 'digital-boardgame-framework';
+import { recordPlay, recordFinish, type PlayOutcome } from 'digital-boardgame-framework';
 import { TyrantsGame, BASE_ACTION_POWER_COST, COLORS, SELECTABLE_COLORS, type TyrantsState, type CardRef, type Color, concedeEndsGame } from './game';
 import { MapView } from './components/MapView';
 import { CardCalibration } from './components/CardCalibration';
@@ -430,6 +430,21 @@ function Card({ card, onClick, label, dim }: { card: CardRef; onClick?: () => vo
 
 type BaseAction = null | { kind: 'deploy' | 'assassinate' } | { kind: 'return-spy'; siteId?: string };
 
+/** The human's result in a finished local game, ranked the same way as the
+ *  online adapter's result (tyrantsAdapter resultOf) and the game-over screen:
+ *  final scoreAll totals, forfeited seats can't win, a shared top score is a
+ *  draw. Used for the hub's "game finished" beacon. */
+function localOutcome(G: TyrantsState, seat: string): PlayOutcome {
+  const scores = scoreAll(G);
+  const forfeited = new Set(G.forfeitedSeats ?? []);
+  const played = Object.entries(scores).filter(([pid]) => !forfeited.has(pid));
+  const pool = played.length > 0 ? played : Object.entries(scores);
+  const best = Math.max(...pool.map(([, sb]) => sb.total));
+  const winners = pool.filter(([, sb]) => sb.total === best).map(([pid]) => pid);
+  if (!winners.includes(seat)) return 'loss';
+  return winners.length > 1 ? 'draw' : 'win';
+}
+
 export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
   const session = useContext(SessionContext);
   const [tab, setTab] = useState<'play' | 'game' | 'map' | 'calibrate' | 'routes' | 'cards' | 'costs' | 'text' | 'sites' | 'whites' | 'slots' | 'dividers' | 'markers' | 'log'>('game');
@@ -611,6 +626,23 @@ export function Board({ G, ctx, moves }: BoardProps<TyrantsState>) {
       }
     });
   }, [ctx.gameover, G, session]);
+
+  // Best-effort "game finished" play counter — the pair of App's recordPlay
+  // start beacon. Local games are always one human (seat 0) vs AI, so mode is
+  // 'ai' with the human's outcome. Fires only on a transition INTO gameover
+  // observed by this mount: the ref starts at the mount-time value, so
+  // re-mounting / re-rendering an already-finished game never counts it again.
+  // Online finishes are reported by the GameServer itself.
+  const prevGameoverRef = useRef(!!ctx.gameover);
+  useEffect(() => {
+    const over = !!ctx.gameover;
+    const wasOver = prevGameoverRef.current;
+    prevGameoverRef.current = over;
+    if (isOnline || !over || wasOver) return;
+    recordFinish('tyrants', 'ai', { outcome: localOutcome(G, HUMAN_SEAT) });
+    // isOnline is fixed for the Board's lifetime (and declared further down, so
+    // it can't sit in the deps array without a TDZ error at render).
+  }, [ctx.gameover, G]);
 
   // Dev-only: mirror the live game log to disk via the vite plugin endpoint.
   // Lets the developer (or an assistant) read the current state without manual
