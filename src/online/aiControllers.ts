@@ -88,3 +88,14 @@ export const tyrantsControllers: Record<string, Ctrl> = {
   // Single-ply heuristic — no lookahead (Worker-CPU-safe).
   standard: controllerFrom(decideHeuristicMove),
 };
+
+/** How the server splits a long AI run across requests (framework >=0.55
+ *  `aiSlice`). NOT `perSeat`: AI seats interleave within a turn — an
+ *  Aberrations card (Chuul, Nothic, Gauth…) hands a forced-discard prompt to
+ *  each opponent and then back to the player, so perSeat would add two ~0.2 s
+ *  round trips per prompt (~11% of AI turns in 3–4p AI games). Instead cap by
+ *  work: a server AI action costs ~10–12 ms (node; one turn ≈ 10 actions,
+ *  ~110 ms mean, up to ~400–550 ms), so 10 steps ≈ one typical turn per
+ *  request (p90 ~190 ms, max ~260 ms measured) — the brief's floor, since
+ *  30–50 ms of work would be only 3–5 actions here. */
+export const TYRANTS_AI_SLICE = { maxSteps: 10 } as const;

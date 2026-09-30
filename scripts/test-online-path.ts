@@ -42,7 +42,7 @@ import { FsStore } from 'digital-boardgame-framework/server/node';
 import { TyrantsGame } from '../src/game';
 import { tyrantsAdapter, type BgioState, type TyrantsAction, type PlayerId } from '../src/adapter/tyrantsAdapter';
 import { snapshotCodec } from '../src/online/snapshotCodec';
-import { tyrantsControllers } from '../src/online/aiControllers';
+import { tyrantsControllers, TYRANTS_AI_SLICE } from '../src/online/aiControllers';
 
 // A normal Tyrants turn is a handful of actions; a whole game a few hundred.
 // These caps sit far above legitimate play so they only trip on a real wedge.
@@ -60,6 +60,8 @@ function makeServer(root: string) {
     codec: snapshotCodec(),
     store: new FsStore(root),
     aiControllers: tyrantsControllers,
+    // Production slicing, so this exercises AI runs continued across fetches.
+    aiSlice: TYRANTS_AI_SLICE,
     snapshotHistory: 20,
     gameUrl: (g, t) => `http://test/${g}?as=${t}`,
   });

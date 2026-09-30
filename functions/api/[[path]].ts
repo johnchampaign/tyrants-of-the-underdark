@@ -13,7 +13,7 @@ import { createClient } from '@supabase/supabase-js';
 import { tyrantsAdapter, type BgioState, type TyrantsAction, type PlayerId } from '../../src/adapter/tyrantsAdapter';
 import { snapshotCodec } from '../../src/online/snapshotCodec';
 import { GitHubIssueForwarder } from '../../src/online/githubIssueForwarder';
-import { tyrantsControllers } from '../../src/online/aiControllers';
+import { tyrantsControllers, TYRANTS_AI_SLICE } from '../../src/online/aiControllers';
 import { handleApi } from '../../server/handlers';
 
 interface Env {
@@ -74,6 +74,9 @@ export const onRequest: PagesFunction<Env> = async (ctx) => {
     // deep-search lookahead AI is deliberately NOT wired here — it would blow
     // the Worker per-move CPU budget. See src/online/aiControllers.ts.
     aiControllers: tyrantsControllers,
+    // Bill AI CPU in ~10-action requests (AI seats interleave on forced
+    // discards, so not perSeat). Rationale + timings: TYRANTS_AI_SLICE.
+    aiSlice: TYRANTS_AI_SLICE,
     notifier,
     // Server-side report forward: stored report -> relay /problem-report ->
     // GitHub issue. The relay holds the GitHub token; this Function does not.
