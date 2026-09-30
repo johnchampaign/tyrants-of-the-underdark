@@ -1,0 +1,3164 @@
+{
+  "publishedAt": "2026-09-30T14:54:13.359Z",
+  "source": "browser-bulk-upload",
+  "hash": "5b49ab41d56ac250188183ab689f36bbd3da1542b1f5c4e821ef42a62f5766aa",
+  "meta": {
+    "numPlayers": 4,
+    "halfDecks": [
+      "demons",
+      "dragons"
+    ],
+    "aiStyles": [
+      "hard",
+      "hard",
+      "hard"
+    ],
+    "archivedAt": "2026-09-30T14:52:59.959Z"
+  },
+  "game": {
+    "schemaVersion": 1,
+    "aiVersion": "2e7e7a6",
+    "buildTime": "2026-09-29T15:32:24.622Z",
+    "source": "browser-archive",
+    "numPlayers": 4,
+    "halfDecks": [
+      "demons",
+      "dragons"
+    ],
+    "aiStyles": [
+      "hard",
+      "hard",
+      "hard"
+    ],
+    "firstPlayerId": "0",
+    "endGameTriggeredAtTurn": null,
+    "scores": {
+      "0": {
+        "sites": 9,
+        "sitesDetail": [
+          {
+            "site": "The Phaerlin",
+            "vp": 2
+          },
+          {
+            "site": "Chaulssin",
+            "vp": 4
+          },
+          {
+            "site": "Everfire",
+            "vp": 3
+          }
+        ],
+        "totalControl": 0,
+        "totalControlDetail": [],
+        "trophies": 1,
+        "trophiesDetail": {
+          "black": 0,
+          "red": 0,
+          "orange": 0,
+          "blue": 0,
+          "white": 1
+        },
+        "deckVp": 3,
+        "deckVpDetail": [
+          {
+            "card": "Derro",
+            "count": 1,
+            "vpEach": 1,
+            "vp": 1
+          },
+          {
+            "card": "Myconid Adult",
+            "count": 1,
+            "vpEach": 1,
+            "vp": 1
+          },
+          {
+            "card": "Wyrmspeaker",
+            "count": 1,
+            "vpEach": 1,
+            "vp": 1
+          },
+          {
+            "card": "Enchanter of Thay",
+            "count": 1,
+            "vpEach": 1,
+            "vp": 1
+          },
+          {
+            "card": "Insane Outcast",
+            "count": 1,
+            "vpEach": -1,
+            "vp": -1
+          }
+        ],
+        "innerCircleVp": 0,
+        "innerCircleVpDetail": [],
+        "vpTokens": 0,
+        "riderBonuses": [],
+        "total": 13
+      },
+      "1": {
+        "sites": 3,
+        "sitesDetail": [
+          {
+            "site": "Ched Nasad",
+            "vp": 3
+          }
+        ],
+        "totalControl": 0,
+        "totalControlDetail": [],
+        "trophies": 0,
+        "trophiesDetail": {
+          "black": 0,
+          "red": 0,
+          "orange": 0,
+          "blue": 0,
+          "white": 0
+        },
+        "deckVp": 7,
+        "deckVpDetail": [
+          {
+            "card": "Red Wyrmling",
+            "count": 1,
+            "vpEach": 3,
+            "vp": 3
+          },
+          {
+            "card": "Green Wyrmling",
+            "count": 1,
+            "vpEach": 2,
+            "vp": 2
+          },
+          {
+            "card": "Dragon Cultist",
+            "count": 1,
+            "vpEach": 1,
+            "vp": 1
+          },
+          {
+            "card": "Myconid Adult",
+            "count": 1,
+            "vpEach": 1,
+            "vp": 1
+          }
+        ],
+        "innerCircleVp": 0,
+        "innerCircleVpDetail": [],
+        "vpTokens": 0,
+        "riderBonuses": [],
+        "total": 10
+      },
+      "2": {
+        "sites": 9,
+        "sitesDetail": [
+          {
+            "site": "Gauntlgrym",
+            "vp": 2
+          },
+          {
+            "site": "The Wormwrithings",
+            "vp": 3
+          },
+          {
+            "site": "Mantol-Derith",
+            "vp": 4
+          }
+        ],
+        "totalControl": 2,
+        "totalControlDetail": [
+          {
+            "site": "Gauntlgrym"
+          }
+        ],
+        "trophies": 4,
+        "trophiesDetail": {
+          "black": 0,
+          "red": 0,
+          "orange": 0,
+          "blue": 0,
+          "white": 4
+        },
+        "deckVp": 7,
+        "deckVpDetail": [
+          {
+            "card": "Blue Wyrmling",
+            "count": 1,
+            "vpEach": 2,
+            "vp": 2
+          },
+          {
+            "card": "Kobold",
+            "count": 1,
+            "vpEach": 1,
+            "vp": 1
+          },
+          {
+            "card": "Black Wyrmling",
+            "count": 1,
+            "vpEach": 1,
+            "vp": 1
+          },
+          {
+            "card": "House Guard",
+            "count": 1,
+            "vpEach": 1,
+            "vp": 1
+          },
+          {
+            "card": "Dragon Cultist",
+            "count": 1,
+            "vpEach": 1,
+            "vp": 1
+          },
+          {
+            "card": "White Wyrmling",
+            "count": 1,
+            "vpEach": 1,
+            "vp": 1
+          }
+        ],
+        "innerCircleVp": 0,
+        "innerCircleVpDetail": [],
+        "vpTokens": 1,
+        "riderBonuses": [],
+        "total": 23
+      },
+      "3": {
+        "sites": 6,
+        "sitesDetail": [
+          {
+            "site": "Eryndlyn",
+            "vp": 3
+          },
+          {
+            "site": "Kanaglym",
+            "vp": 3
+          }
+        ],
+        "totalControl": 0,
+        "totalControlDetail": [],
+        "trophies": 0,
+        "trophiesDetail": {
+          "black": 0,
+          "red": 0,
+          "orange": 0,
+          "blue": 0,
+          "white": 0
+        },
+        "deckVp": 8,
+        "deckVpDetail": [
+          {
+            "card": "Red Wyrmling",
+            "count": 1,
+            "vpEach": 3,
+            "vp": 3
+          },
+          {
+            "card": "Jackalwere",
+            "count": 1,
+            "vpEach": 2,
+            "vp": 2
+          },
+          {
+            "card": "White Wyrmling",
+            "count": 1,
+            "vpEach": 1,
+            "vp": 1
+          },
+          {
+            "card": "Priestess of Lolth",
+            "count": 1,
+            "vpEach": 1,
+            "vp": 1
+          },
+          {
+            "card": "Night Hag",
+            "count": 1,
+            "vpEach": 1,
+            "vp": 1
+          }
+        ],
+        "innerCircleVp": 0,
+        "innerCircleVpDetail": [],
+        "vpTokens": 0,
+        "riderBonuses": [],
+        "total": 14
+      }
+    },
+    "players": {
+      "0": {
+        "color": "black",
+        "vp": 0,
+        "barracksLeft": 32,
+        "trophyHall": {
+          "black": 0,
+          "red": 0,
+          "orange": 0,
+          "blue": 0,
+          "white": 1
+        },
+        "deckSize": 10,
+        "discardSize": 0,
+        "handSize": 5,
+        "innerCircleSize": 0
+      },
+      "1": {
+        "color": "red",
+        "vp": 0,
+        "barracksLeft": 33,
+        "trophyHall": {
+          "black": 0,
+          "red": 0,
+          "orange": 0,
+          "blue": 0,
+          "white": 0
+        },
+        "deckSize": 9,
+        "discardSize": 0,
+        "handSize": 5,
+        "innerCircleSize": 0
+      },
+      "2": {
+        "color": "orange",
+        "vp": 1,
+        "barracksLeft": 32,
+        "trophyHall": {
+          "black": 0,
+          "red": 0,
+          "orange": 0,
+          "blue": 0,
+          "white": 4
+        },
+        "deckSize": 5,
+        "discardSize": 9,
+        "handSize": 2,
+        "innerCircleSize": 0
+      },
+      "3": {
+        "color": "blue",
+        "vp": 0,
+        "barracksLeft": 33,
+        "trophyHall": {
+          "black": 0,
+          "red": 0,
+          "orange": 0,
+          "blue": 0,
+          "white": 0
+        },
+        "deckSize": 10,
+        "discardSize": 0,
+        "handSize": 5,
+        "innerCircleSize": 0
+      }
+    },
+    "finalSiteControl": {
+      "gauntlgrym": "orange",
+      "blingdenstone": null,
+      "buiyrandyn": null,
+      "jhachalkhyn": null,
+      "stoneshaft": null,
+      "gracklstugh": null,
+      "wormwrithings": "orange",
+      "skullport": null,
+      "chasmleap": null,
+      "menzoberranzan": null,
+      "mantol-derith": "orange",
+      "araumycos": null,
+      "eryndlyn": "blue",
+      "labyrinth": null,
+      "halls-legion": null,
+      "ched-nasad": "red",
+      "chchitl": null,
+      "phaerlin": "black",
+      "llacerellyn": null,
+      "sszuraassnee": null,
+      "tsenviilyq": null,
+      "yathchol": null,
+      "chaulssin": "black",
+      "dekanter": null,
+      "everfire": "black",
+      "kanaglym": "blue"
+    },
+    "finalControlMarkers": {
+      "gauntlgrym": {
+        "siteId": "gauntlgrym",
+        "holder": "orange",
+        "side": "control",
+        "controlInfluence": 1,
+        "controlVp": 0,
+        "totalControlInfluence": 1,
+        "totalControlVp": 1
+      },
+      "phaerlin": {
+        "siteId": "phaerlin",
+        "holder": "black",
+        "side": "control",
+        "controlInfluence": 1,
+        "controlVp": 0,
+        "totalControlInfluence": 1,
+        "totalControlVp": 1
+      }
+    },
+    "finalTroops": {
+      "gauntlgrym:0": "orange",
+      "gauntlgrym:1": "orange",
+      "gauntlgrym:2": "orange",
+      "blingdenstone:0": "white",
+      "blingdenstone:1": "white",
+      "buiyrandyn:0": "white",
+      "stoneshaft:0": "white",
+      "stoneshaft:1": "white",
+      "gracklstugh:0": "white",
+      "gracklstugh:1": "white",
+      "wormwrithings:0": "orange",
+      "skullport:0": "white",
+      "skullport:1": "white",
+      "menzoberranzan:0": "white",
+      "menzoberranzan:1": "white",
+      "menzoberranzan:2": "white",
+      "menzoberranzan:3": "black",
+      "menzoberranzan:4": "red",
+      "menzoberranzan:5": "red",
+      "mantol-derith:2": "orange",
+      "araumycos:0": "white",
+      "araumycos:1": "white",
+      "araumycos:2": "white",
+      "araumycos:3": "white",
+      "eryndlyn:0": "blue",
+      "labyrinth:0": "white",
+      "halls-legion:1": "white",
+      "ched-nasad:0": "red",
+      "chchitl:0": "white",
+      "chchitl:1": "white",
+      "chchitl:2": "blue",
+      "phaerlin:0": "white",
+      "phaerlin:1": "black",
+      "phaerlin:2": "black",
+      "sszuraassnee:0": "white",
+      "sszuraassnee:1": "white",
+      "tsenviilyq:0": "white",
+      "tsenviilyq:1": "white",
+      "tsenviilyq:2": "white",
+      "yathchol:0": "white",
+      "yathchol:1": "white",
+      "chaulssin:0": "black",
+      "dekanter:0": "white",
+      "dekanter:1": "white",
+      "everfire:0": "black",
+      "everfire:1": "black",
+      "kanaglym:0": "blue",
+      "menz-mantol:0": "red",
+      "menz-mantol:2": "orange",
+      "araumycos-laby:0": "white",
+      "mantol-blingden:0": "white",
+      "araumycos-chasm:0": "white",
+      "eryndlyn-kanaglym:0": "blue",
+      "eryndlyn-kanaglym:1": "blue",
+      "chchitl-kanaglym:0": "blue",
+      "llacerellyn-ched-nasad:0": "red",
+      "llacerellyn-ched-nasad:1": "red",
+      "ched-nasad-dekanter:0": "red",
+      "chaulssin-phaerlin:0": "black",
+      "chaulssin-everfire:0": "black",
+      "mantol-derith-wormwrithings:0": "orange",
+      "llacerellyn-eryndlyn:0": "blue",
+      "ched-nasad-araumycos:0": "white",
+      "araumycos-eryndlyn:0": "white",
+      "gauntlgrym-jhachalkhyn:0": "orange"
+    },
+    "finalSpies": {
+      "menzoberranzan": [
+        "black",
+        "red"
+      ]
+    },
+    "turnLogs": [],
+    "snapshots": [
+      {
+        "turn": 1,
+        "playerId": "2",
+        "color": "orange",
+        "codec": "eyJmaXJzdFBsYXllcklkIjoiMiIsIm1hcmtldCI6eyJkZWNrIjpbeyJkZWNrIjoiZHJhZ29ucyIsInNsb3QiOjI0LCJuYW1lIjoiS29ib2xkIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZHJhZ29ucy8yNC11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRyYWdvbnMiLCJzbG90IjoyOSwibmFtZSI6IlNldmVyaW4gU2lscmFqaW4iLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kcmFnb25zLzI5LXVubmFtZWQuanBnIn0seyJkZWNrIjoiZHJhZ29ucyIsInNsb3QiOjM3LCJuYW1lIjoiV3lybXNwZWFrZXIiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kcmFnb25zLzM3LXVubmFtZWQuanBnIn0seyJkZWNrIjoiZHJhZ29ucyIsInNsb3QiOjM0LCJuYW1lIjoiV2hpdGUgV3lybWxpbmciLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kcmFnb25zLzM0LXVubmFtZWQuanBnIn0seyJkZWNrIjoiZHJhZ29ucyIsInNsb3QiOjUsIm5hbWUiOiJCbHVlIFd5cm1saW5nIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZHJhZ29ucy8wNS11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRlbW9ucyIsInNsb3QiOjcsIm5hbWUiOiJHaG91bCIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RlbW9ucy8wNy11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRyYWdvbnMiLCJzbG90Ijo0LCJuYW1lIjoiQmx1ZSBXeXJtbGluZyIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMDQtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkcmFnb25zIiwic2xvdCI6MTcsIm5hbWUiOiJFbmNoYW50ZXIgb2YgVGhheSIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMTctdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkZW1vbnMiLCJzbG90IjoxNCwibmFtZSI6IkdyYXonenQiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kZW1vbnMvMTQtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkZW1vbnMiLCJzbG90IjoyMiwibmFtZSI6Ik1pbmQgRmxheWVyIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZGVtb25zLzIyLXVubmFtZWQuanBnIn0seyJkZWNrIjoiZHJhZ29ucyIsInNsb3QiOjM1LCJuYW1lIjoiV2hpdGUgV3lybWxpbmciLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kcmFnb25zLzM1LXVubmFtZWQuanBnIn0seyJkZWNrIjoiZHJhZ29ucyIsInNsb3QiOjM2LCJuYW1lIjoiV2hpdGUgV3lybWxpbmciLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kcmFnb25zLzM2LXVubmFtZWQuanBnIn0seyJkZWNrIjoiZGVtb25zIiwic2xvdCI6MTMsIm5hbWUiOiJHbGFicmV6dSIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RlbW9ucy8xMy11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRlbW9ucyIsInNsb3QiOjE5LCJuYW1lIjoiSmFja2Fsd2VyZSIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RlbW9ucy8xOS11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRyYWdvbnMiLCJzbG90IjozMCwibmFtZSI6IldhdGNoZXIgb2YgVGhheSIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMzAtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkcmFnb25zIiwic2xvdCI6MTgsIm5hbWUiOiJFbmNoYW50ZXIgb2YgVGhheSIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMTgtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkZW1vbnMiLCJzbG90IjoyMywibmFtZSI6Ik1pbmQgRmxheWVyIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZGVtb25zLzIzLXVubmFtZWQuanBnIn0seyJkZWNrIjoiZHJhZ29ucyIsInNsb3QiOjM5LCJuYW1lIjoiV3lybXNwZWFrZXIiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kcmFnb25zLzM5LXVubmFtZWQuanBnIn0seyJkZWNrIjoiZHJhZ29ucyIsInNsb3QiOjcsIm5hbWUiOiJDbGVyaWMgb2YgTGFvZ3plZCIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMDctdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkZW1vbnMiLCJzbG90IjoyMCwibmFtZSI6Ik1hcmlsaXRoIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZGVtb25zLzIwLXVubmFtZWQuanBnIn0seyJkZWNrIjoiZHJhZ29ucyIsInNsb3QiOjMyLCJuYW1lIjoiV2F0Y2hlciBvZiBUaGF5IiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZHJhZ29ucy8zMi11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRlbW9ucyIsInNsb3QiOjI4LCJuYW1lIjoiTXljb25pZCBTb3ZlcmVpZ24iLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kZW1vbnMvMjgtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkcmFnb25zIiwic2xvdCI6MTEsIm5hbWUiOiJEcmFnb24gQ3VsdGlzdCIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMTEtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkZW1vbnMiLCJzbG90IjoxMiwibmFtZSI6IkdpYmJlcmluZyBNb3V0aGVyIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZGVtb25zLzEyLXVubmFtZWQuanBnIn0seyJkZWNrIjoiZHJhZ29ucyIsInNsb3QiOjI2LCJuYW1lIjoiUmVkIERyYWdvbiIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMjYtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkZW1vbnMiLCJzbG90IjozMSwibmFtZSI6Im5hbGZlc2huZWUiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kZW1vbnMvMzEtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkZW1vbnMiLCJzbG90IjozOSwibmFtZSI6Ilp1Z2d0bW95IiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZGVtb25zLzM5LXVubmFtZWQuanBnIn0seyJkZWNrIjoiZHJhZ29ucyIsInNsb3QiOjE5LCJuYW1lIjoiR3JlZW4gRHJhZ29uIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZHJhZ29ucy8xOS11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRyYWdvbnMiLCJzbG90IjoxLCJuYW1lIjoiQmxhY2sgV3lybWxpbmciLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kcmFnb25zLzAxLXVubmFtZWQuanBnIn0seyJkZWNrIjoiZGVtb25zIiwic2xvdCI6NSwibmFtZSI6IkV0dGluIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZGVtb25zLzA1LXVubmFtZWQuanBnIn0seyJkZWNrIjoiZGVtb25zIiwic2xvdCI6MTgsIm5hbWUiOiJKYWNrYWx3ZXJlIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZGVtb25zLzE4LXVubmFtZWQuanBnIn0seyJkZWNrIjoiZGVtb25zIiwic2xvdCI6MzUsIm5hbWUiOiJPcmN1cyIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RlbW9ucy8zNS11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRyYWdvbnMiLCJzbG90IjoyMCwibmFtZSI6IkdyZWVuIFd5cm1saW5nIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZHJhZ29ucy8yMC11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRlbW9ucyIsInNsb3QiOjMsIm5hbWUiOiJEZXJybyIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RlbW9ucy8wMy11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRyYWdvbnMiLCJzbG90IjozMywibmFtZSI6IldoaXRlIERyYWdvbiIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMzMtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkcmFnb25zIiwic2xvdCI6MTMsIm5hbWUiOiJEcmFnb24gQ3VsdGlzdCIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMTMtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkZW1vbnMiLCJzbG90IjozNywibmFtZSI6IlN1Y2N1YnVzIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZGVtb25zLzM3LXVubmFtZWQuanBnIn0seyJkZWNrIjoiZGVtb25zIiwic2xvdCI6MTYsIm5hbWUiOiJIZXpyb3UiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kZW1vbnMvMTYtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkcmFnb25zIiwic2xvdCI6MCwibmFtZSI6IkJsYWNrIERyYWdvbiIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMDAtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkcmFnb25zIiwic2xvdCI6MywibmFtZSI6IkJsdWUgRHJhZ29uIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZHJhZ29ucy8wMy11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRlbW9ucyIsInNsb3QiOjI1LCJuYW1lIjoiTXljb25pZCBBZHVsdCIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RlbW9ucy8yNS11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRyYWdvbnMiLCJzbG90IjoyNywibmFtZSI6IlJlZCBXeXJtbGluZyIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMjctdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkZW1vbnMiLCJzbG90Ijo0LCJuYW1lIjoiRXR0aW4iLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kZW1vbnMvMDQtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkZW1vbnMiLCJzbG90IjoxNywibmFtZSI6IkphY2thbHdlcmUiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kZW1vbnMvMTctdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkcmFnb25zIiwic2xvdCI6MTQsIm5hbWUiOiJEcmFnb25jbGF3IiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZHJhZ29ucy8xNC11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRlbW9ucyIsInNsb3QiOjEwLCJuYW1lIjoiR2liYmVyaW5nIE1vdXRoZXIiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kZW1vbnMvMTAtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkZW1vbnMiLCJzbG90IjozMiwibmFtZSI6Ik5pZ2h0IEhhZyIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RlbW9ucy8zMi11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRlbW9ucyIsInNsb3QiOjM2LCJuYW1lIjoiU3VjY3VidXMiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kZW1vbnMvMzYtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkZW1vbnMiLCJzbG90IjoxLCJuYW1lIjoiRGVtb2dvcmdvbiIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RlbW9ucy8wMS11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRlbW9ucyIsInNsb3QiOjE1LCJuYW1lIjoiSGV6cm91IiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZGVtb25zLzE1LXVubmFtZWQuanBnIn0seyJkZWNrIjoiZHJhZ29ucyIsInNsb3QiOjM4LCJuYW1lIjoiV3lybXNwZWFrZXIiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kcmFnb25zLzM4LXVubmFtZWQuanBnIn0seyJkZWNrIjoiZGVtb25zIiwic2xvdCI6MjEsIm5hbWUiOiJNYXJpbGl0aCIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RlbW9ucy8yMS11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRyYWdvbnMiLCJzbG90IjoyNSwibmFtZSI6IlJhdGggTW9kYXIiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kcmFnb25zLzI1LXVubmFtZWQuanBnIn0seyJkZWNrIjoiZHJhZ29ucyIsInNsb3QiOjI4LCJuYW1lIjoiUmVkIFd5cm1saW5nIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZHJhZ29ucy8yOC11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRyYWdvbnMiLCJzbG90IjoyMiwibmFtZSI6IktvYm9sZCIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMjItdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkcmFnb25zIiwic2xvdCI6MjMsIm5hbWUiOiJLb2JvbGQiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kcmFnb25zLzIzLXVubmFtZWQuanBnIn0seyJkZWNrIjoiZHJhZ29ucyIsInNsb3QiOjYsIm5hbWUiOiJDbGVyaWMgb2YgTGFvZ3plZCIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMDYtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkcmFnb25zIiwic2xvdCI6MTYsIm5hbWUiOiJFbmNoYW50ZXIgb2YgVGhheSIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMTYtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkZW1vbnMiLCJzbG90IjozOCwibmFtZSI6IlZyb2NrIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZGVtb25zLzM4LXVubmFtZWQuanBnIn0seyJkZWNrIjoiZGVtb25zIiwic2xvdCI6MjQsIm5hbWUiOiJNaW5kIEZsYXllciIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RlbW9ucy8yNC11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRyYWdvbnMiLCJzbG90IjozMSwibmFtZSI6IldhdGNoZXIgb2YgVGhheSIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMzEtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkZW1vbnMiLCJzbG90IjoxMSwibmFtZSI6IkdpYmJlcmluZyBNb3V0aGVyIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZGVtb25zLzExLXVubmFtZWQuanBnIn0seyJkZWNrIjoiZGVtb25zIiwic2xvdCI6MjksIm5hbWUiOiJNeWNvbmlkIFNvdmVyZWlnbiIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RlbW9ucy8yOS11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRyYWdvbnMiLCJzbG90IjoyLCJuYW1lIjoiQmxhY2sgV3lybWxpbmciLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kcmFnb25zLzAyLXVubmFtZWQuanBnIn0seyJkZWNrIjoiZGVtb25zIiwic2xvdCI6MCwibmFtZSI6IkJhbG9yIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZGVtb25zLzAwLXVubmFtZWQuanBnIn0seyJkZWNrIjoiZHJhZ29ucyIsInNsb3QiOjIxLCJuYW1lIjoiR3JlZW4gV3lybWxpbmciLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kcmFnb25zLzIxLXVubmFtZWQuanBnIn0seyJkZWNrIjoiZGVtb25zIiwic2xvdCI6OSwibmFtZSI6Ikdob3VsIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZGVtb25zLzA5LXVubmFtZWQuanBnIn0seyJkZWNrIjoiZHJhZ29ucyIsInNsb3QiOjE1LCJuYW1lIjoiRHJhZ29uY2xhdyIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMTUtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkZW1vbnMiLCJzbG90IjozMCwibmFtZSI6Im5hbGZlc2huZWUiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kZW1vbnMvMzAtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkcmFnb25zIiwic2xvdCI6MTIsIm5hbWUiOiJEcmFnb24gQ3VsdGlzdCIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMTItdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkZW1vbnMiLCJzbG90IjoyNywibmFtZSI6Ik15Y29uaWQgQWR1bHQiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kZW1vbnMvMjctdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkcmFnb25zIiwic2xvdCI6MTAsIm5hbWUiOiJEcmFnb24gQ3VsdGlzdCIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMTAtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkcmFnb25zIiwic2xvdCI6OCwibmFtZSI6IkN1bHQgRmFuYXRpYyIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMDgtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkZW1vbnMiLCJzbG90Ijo4LCJuYW1lIjoiR2hvdWwiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kZW1vbnMvMDgtdW5uYW1lZC5qcGcifV0sInJvdyI6W3siZGVjayI6ImRlbW9ucyIsInNsb3QiOjI2LCJuYW1lIjoiTXljb25pZCBBZHVsdCIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RlbW9ucy8yNi11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRlbW9ucyIsInNsb3QiOjYsIm5hbWUiOiJFdHRpbiIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RlbW9ucy8wNi11bm5hbWVkLmpwZyJ9LHsiZGVjayI6ImRlbW9ucyIsInNsb3QiOjM0LCJuYW1lIjoiTmlnaHQgSGFnIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZGVtb25zLzM0LXVubmFtZWQuanBnIn0seyJkZWNrIjoiZGVtb25zIiwic2xvdCI6MiwibmFtZSI6IkRlcnJvIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvZGVtb25zLzAyLXVubmFtZWQuanBnIn0seyJkZWNrIjoiZGVtb25zIiwic2xvdCI6MzMsIm5hbWUiOiJOaWdodCBIYWciLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9kZW1vbnMvMzMtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJkcmFnb25zIiwic2xvdCI6OSwibmFtZSI6IkN1bHQgRmFuYXRpYyIsImltYWdlIjoiYXNzZXRzL2NhcmRzL2RyYWdvbnMvMDktdW5uYW1lZC5qcGcifV19LCJhdXhTdGFja3MiOnsiaG91c2VHdWFyZHMiOjE1LCJwcmllc3Rlc3NlcyI6MTV9LCJwbGF5ZXJzIjp7IjAiOnsiY29sb3IiOiJibGFjayIsImRlY2siOlt7ImRlY2siOiJzdGFydGVyLTEiLCJzbG90Ijo0NCwibmFtZSI6IlNvbGRpZXIiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9zdGFydGVyLTEvNDQtdW5uYW1lZC5qcGcifSx7ImRlY2siOiJzdGFydGVyLTEiLCJzbG90Ijo0MiwibmFtZSI6Ik5vYmxlIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvc3RhcnRlci0xLzQyLXVubmFtZWQuanBnIn0seyJkZWNrIjoic3RhcnRlci0xIiwic2xvdCI6NDIsIm5hbWUiOiJOb2JsZSIsImltYWdlIjoiYXNzZXRzL2NhcmRzL3N0YXJ0ZXItMS80Mi11bm5hbWVkLmpwZyJ9LHsiZGVjayI6InN0YXJ0ZXItMSIsInNsb3QiOjQ0LCJuYW1lIjoiU29sZGllciIsImltYWdlIjoiYXNzZXRzL2NhcmRzL3N0YXJ0ZXItMS80NC11bm5hbWVkLmpwZyJ9LHsiZGVjayI6InN0YXJ0ZXItMSIsInNsb3QiOjQyLCJuYW1lIjoiTm9ibGUiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9zdGFydGVyLTEvNDItdW5uYW1lZC5qcGcifV0sImhhbmQiOlt7ImRlY2siOiJzdGFydGVyLTEiLCJzbG90Ijo0MiwibmFtZSI6Ik5vYmxlIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvc3RhcnRlci0xLzQyLXVubmFtZWQuanBnIn0seyJkZWNrIjoic3RhcnRlci0xIiwic2xvdCI6NDIsIm5hbWUiOiJOb2JsZSIsImltYWdlIjoiYXNzZXRzL2NhcmRzL3N0YXJ0ZXItMS80Mi11bm5hbWVkLmpwZyJ9LHsiZGVjayI6InN0YXJ0ZXItMSIsInNsb3QiOjQ0LCJuYW1lIjoiU29sZGllciIsImltYWdlIjoiYXNzZXRzL2NhcmRzL3N0YXJ0ZXItMS80NC11bm5hbWVkLmpwZyJ9LHsiZGVjayI6InN0YXJ0ZXItMSIsInNsb3QiOjQyLCJuYW1lIjoiTm9ibGUiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9zdGFydGVyLTEvNDItdW5uYW1lZC5qcGcifSx7ImRlY2siOiJzdGFydGVyLTEiLCJzbG90Ijo0MiwibmFtZSI6Ik5vYmxlIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvc3RhcnRlci0xLzQyLXVubmFtZWQuanBnIn1dLCJkaXNjYXJkIjpbXSwiaW5uZXJDaXJjbGUiOltdLCJjYXJkc1BsYXllZCI6W10sInRyb3BoeUhhbGwiOnsiYmxhY2siOjAsInJlZCI6MCwib3JhbmdlIjowLCJibHVlIjowLCJ3aGl0ZSI6MH0sImJhcnJhY2tzTGVmdCI6NDAsInNwaWVzTGVmdCI6NSwicG93ZXIiOjAsImluZmx1ZW5jZSI6MCwidnAiOjB9LCIxIjp7ImNvbG9yIjoicmVkIiwiZGVjayI6W3siZGVjayI6InN0YXJ0ZXItMSIsInNsb3QiOjQyLCJuYW1lIjoiTm9ibGUiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9zdGFydGVyLTEvNDItdW5uYW1lZC5qcGcifSx7ImRlY2siOiJzdGFydGVyLTEiLCJzbG90Ijo0MiwibmFtZSI6Ik5vYmxlIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvc3RhcnRlci0xLzQyLXVubmFtZWQuanBnIn0seyJkZWNrIjoic3RhcnRlci0xIiwic2xvdCI6NDIsIm5hbWUiOiJOb2JsZSIsImltYWdlIjoiYXNzZXRzL2NhcmRzL3N0YXJ0ZXItMS80Mi11bm5hbWVkLmpwZyJ9LHsiZGVjayI6InN0YXJ0ZXItMSIsInNsb3QiOjQyLCJuYW1lIjoiTm9ibGUiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9zdGFydGVyLTEvNDItdW5uYW1lZC5qcGcifSx7ImRlY2siOiJzdGFydGVyLTEiLCJzbG90Ijo0NCwibmFtZSI6IlNvbGRpZXIiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9zdGFydGVyLTEvNDQtdW5uYW1lZC5qcGcifV0sImhhbmQiOlt7ImRlY2siOiJzdGFydGVyLTEiLCJzbG90Ijo0MiwibmFtZSI6Ik5vYmxlIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvc3RhcnRlci0xLzQyLXVubmFtZWQuanBnIn0seyJkZWNrIjoic3RhcnRlci0xIiwic2xvdCI6NDQsIm5hbWUiOiJTb2xkaWVyIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvc3RhcnRlci0xLzQ0LXVubmFtZWQuanBnIn0seyJkZWNrIjoic3RhcnRlci0xIiwic2xvdCI6NDIsIm5hbWUiOiJOb2JsZSIsImltYWdlIjoiYXNzZXRzL2NhcmRzL3N0YXJ0ZXItMS80Mi11bm5hbWVkLmpwZyJ9LHsiZGVjayI6InN0YXJ0ZXItMSIsInNsb3QiOjQ0LCJuYW1lIjoiU29sZGllciIsImltYWdlIjoiYXNzZXRzL2NhcmRzL3N0YXJ0ZXItMS80NC11bm5hbWVkLmpwZyJ9LHsiZGVjayI6InN0YXJ0ZXItMSIsInNsb3QiOjQyLCJuYW1lIjoiTm9ibGUiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9zdGFydGVyLTEvNDItdW5uYW1lZC5qcGcifV0sImRpc2NhcmQiOltdLCJpbm5lckNpcmNsZSI6W10sImNhcmRzUGxheWVkIjpbXSwidHJvcGh5SGFsbCI6eyJibGFjayI6MCwicmVkIjowLCJvcmFuZ2UiOjAsImJsdWUiOjAsIndoaXRlIjowfSwiYmFycmFja3NMZWZ0Ijo0MCwic3BpZXNMZWZ0Ijo1LCJwb3dlciI6MCwiaW5mbHVlbmNlIjowLCJ2cCI6MH0sIjIiOnsiY29sb3IiOiJvcmFuZ2UiLCJkZWNrIjpbeyJkZWNrIjoic3RhcnRlci0xIiwic2xvdCI6NDIsIm5hbWUiOiJOb2JsZSIsImltYWdlIjoiYXNzZXRzL2NhcmRzL3N0YXJ0ZXItMS80Mi11bm5hbWVkLmpwZyJ9LHsiZGVjayI6InN0YXJ0ZXItMSIsInNsb3QiOjQyLCJuYW1lIjoiTm9ibGUiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9zdGFydGVyLTEvNDItdW5uYW1lZC5qcGcifSx7ImRlY2siOiJzdGFydGVyLTEiLCJzbG90Ijo0MiwibmFtZSI6Ik5vYmxlIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvc3RhcnRlci0xLzQyLXVubmFtZWQuanBnIn0seyJkZWNrIjoic3RhcnRlci0xIiwic2xvdCI6NDQsIm5hbWUiOiJTb2xkaWVyIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvc3RhcnRlci0xLzQ0LXVubmFtZWQuanBnIn0seyJkZWNrIjoic3RhcnRlci0xIiwic2xvdCI6NDIsIm5hbWUiOiJOb2JsZSIsImltYWdlIjoiYXNzZXRzL2NhcmRzL3N0YXJ0ZXItMS80Mi11bm5hbWVkLmpwZyJ9XSwiaGFuZCI6W3siZGVjayI6InN0YXJ0ZXItMSIsInNsb3QiOjQyLCJuYW1lIjoiTm9ibGUiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9zdGFydGVyLTEvNDItdW5uYW1lZC5qcGcifSx7ImRlY2siOiJzdGFydGVyLTEiLCJzbG90Ijo0MiwibmFtZSI6Ik5vYmxlIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvc3RhcnRlci0xLzQyLXVubmFtZWQuanBnIn0seyJkZWNrIjoic3RhcnRlci0xIiwic2xvdCI6NDQsIm5hbWUiOiJTb2xkaWVyIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvc3RhcnRlci0xLzQ0LXVubmFtZWQuanBnIn0seyJkZWNrIjoic3RhcnRlci0xIiwic2xvdCI6NDQsIm5hbWUiOiJTb2xkaWVyIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvc3RhcnRlci0xLzQ0LXVubmFtZWQuanBnIn0seyJkZWNrIjoic3RhcnRlci0xIiwic2xvdCI6NDIsIm5hbWUiOiJOb2JsZSIsImltYWdlIjoiYXNzZXRzL2NhcmRzL3N0YXJ0ZXItMS80Mi11bm5hbWVkLmpwZyJ9XSwiZGlzY2FyZCI6W10sImlubmVyQ2lyY2xlIjpbXSwiY2FyZHNQbGF5ZWQiOltdLCJ0cm9waHlIYWxsIjp7ImJsYWNrIjowLCJyZWQiOjAsIm9yYW5nZSI6MCwiYmx1ZSI6MCwid2hpdGUiOjB9LCJiYXJyYWNrc0xlZnQiOjQwLCJzcGllc0xlZnQiOjUsInBvd2VyIjowLCJpbmZsdWVuY2UiOjAsInZwIjowfSwiMyI6eyJjb2xvciI6ImJsdWUiLCJkZWNrIjpbeyJkZWNrIjoic3RhcnRlci0xIiwic2xvdCI6NDIsIm5hbWUiOiJOb2JsZSIsImltYWdlIjoiYXNzZXRzL2NhcmRzL3N0YXJ0ZXItMS80Mi11bm5hbWVkLmpwZyJ9LHsiZGVjayI6InN0YXJ0ZXItMSIsInNsb3QiOjQyLCJuYW1lIjoiTm9ibGUiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9zdGFydGVyLTEvNDItdW5uYW1lZC5qcGcifSx7ImRlY2siOiJzdGFydGVyLTEiLCJzbG90Ijo0MiwibmFtZSI6Ik5vYmxlIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvc3RhcnRlci0xLzQyLXVubmFtZWQuanBnIn0seyJkZWNrIjoic3RhcnRlci0xIiwic2xvdCI6NDQsIm5hbWUiOiJTb2xkaWVyIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvc3RhcnRlci0xLzQ0LXVubmFtZWQuanBnIn0seyJkZWNrIjoic3RhcnRlci0xIiwic2xvdCI6NDQsIm5hbWUiOiJTb2xkaWVyIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvc3RhcnRlci0xLzQ0LXVubmFtZWQuanBnIn1dLCJoYW5kIjpbeyJkZWNrIjoic3RhcnRlci0xIiwic2xvdCI6NDQsIm5hbWUiOiJTb2xkaWVyIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvc3RhcnRlci0xLzQ0LXVubmFtZWQuanBnIn0seyJkZWNrIjoic3RhcnRlci0xIiwic2xvdCI6NDIsIm5hbWUiOiJOb2JsZSIsImltYWdlIjoiYXNzZXRzL2NhcmRzL3N0YXJ0ZXItMS80Mi11bm5hbWVkLmpwZyJ9LHsiZGVjayI6InN0YXJ0ZXItMSIsInNsb3QiOjQyLCJuYW1lIjoiTm9ibGUiLCJpbWFnZSI6ImFzc2V0cy9jYXJkcy9zdGFydGVyLTEvNDItdW5uYW1lZC5qcGcifSx7ImRlY2siOiJzdGFydGVyLTEiLCJzbG90Ijo0MiwibmFtZSI6Ik5vYmxlIiwiaW1hZ2UiOiJhc3NldHMvY2FyZHMvc3RhcnRlci0xLzQyLXVubmFtZWQuanBnIn0seyJkZWNrIjoic3RhcnRlci0xIiwic2xvdCI6NDIsIm5hbWUiOiJOb2JsZSIsImltYWdlIjoiYXNzZXRzL2NhcmRzL3N0YXJ0ZXItMS80Mi11bm5hbWVkLmpwZyJ9XSwiZGlzY2FyZCI6W10sImlubmVyQ2lyY2xlIjpbXSwiY2FyZHNQbGF5ZWQiOltdLCJ0cm9waHlIYWxsIjp7ImJsYWNrIjowLCJyZWQiOjAsIm9yYW5nZSI6MCwiYmx1ZSI6MCwid2hpdGUiOjB9LCJiYXJyYWNrc0xlZnQiOjQwLCJzcGllc0xlZnQiOjUsInBvd2VyIjowLCJpbmZsdWVuY2UiOjAsInZwIjowfX0sImxvZyI6W3sic2VxIjowLCJ0dXJuIjowLCJzaWRlIjoiMiIsImtpbmQiOiJnYW1lLnN0YXJ0IiwibXNnIjoiR2FtZSBzdGFydGVkLiBQMyAob3JhbmdlKSBnb2VzIGZpcnN0LiIsInBheWxvYWQiOnsiZmlyc3RTZWF0IjoyfX0seyJzZXEiOjEsInR1cm4iOjEsInNpZGUiOiIyIiwia2luZCI6InR1cm4uc3RhcnQiLCJtc2ciOiJUdXJuOiBQMyAob3JhbmdlKSIsInBheWxvYWQiOnsicGxheWVyIjoiMiIsImNvbG9yIjoib3JhbmdlIn19XSwicGVuZGluZ0Nob2ljZSI6bnVsbCwicGF1c2VkSGFuZGxlclN0YXRlIjpudWxsLCJ0cm9vcHMiOnsiZ2F1bnRsZ3J5bTowIjoid2hpdGUiLCJnYXVudGxncnltOjEiOiJ3aGl0ZSIsImdhdW50bGdyeW06MiI6bnVsbCwiYmxpbmdkZW5zdG9uZTowIjoid2hpdGUiLCJibGluZ2RlbnN0b25lOjEiOiJ3aGl0ZSIsImJ1aXlyYW5keW46MCI6IndoaXRlIiwiYnVpeXJhbmR5bjoxIjpudWxsLCJidWl5cmFuZHluOjIiOm51bGwsImpoYWNoYWxraHluOjAiOm51bGwsImpoYWNoYWxraHluOjEiOm51bGwsImpoYWNoYWxraHluOjIiOm51bGwsImpoYWNoYWxraHluOjMiOm51bGwsInN0b25lc2hhZnQ6MCI6IndoaXRlIiwic3RvbmVzaGFmdDoxIjoid2hpdGUiLCJncmFja2xzdHVnaDowIjoid2hpdGUiLCJncmFja2xzdHVnaDoxIjoid2hpdGUiLCJncmFja2xzdHVnaDoyIjpudWxsLCJncmFja2xzdHVnaDozIjpudWxsLCJ3b3Jtd3JpdGhpbmdzOjAiOm51bGwsIndvcm13cml0aGluZ3M6MSI6bnVsbCwid29ybXdyaXRoaW5nczoyIjpudWxsLCJza3VsbHBvcnQ6MCI6IndoaXRlIiwic2t1bGxwb3J0OjEiOiJ3aGl0ZSIsInNrdWxscG9ydDoyIjpudWxsLCJza3VsbHBvcnQ6MyI6bnVsbCwic2t1bGxwb3J0OjQiOm51bGwsImNoYXNtbGVhcDowIjpudWxsLCJtZW56b2JlcnJhbnphbjowIjoid2hpdGUiLCJtZW56b2JlcnJhbnphbjoxIjoid2hpdGUiLCJtZW56b2JlcnJhbnphbjoyIjoid2hpdGUiLCJtZW56b2JlcnJhbnphbjozIjpudWxsLCJtZW56b2JlcnJhbnphbjo0IjpudWxsLCJtZW56b2JlcnJhbnphbjo1IjpudWxsLCJtYW50b2wtZGVyaXRoOjAiOiJ3aGl0ZSIsIm1hbnRvbC1kZXJpdGg6MSI6IndoaXRlIiwibWFudG9sLWRlcml0aDoyIjpudWxsLCJtYW50b2wtZGVyaXRoOjMiOm51bGwsIm1hbnRvbC1kZXJpdGg6NCI6bnVsbCwiYXJhdW15Y29zOjAiOiJ3aGl0ZSIsImFyYXVteWNvczoxIjoid2hpdGUiLCJhcmF1bXljb3M6MiI6IndoaXRlIiwiYXJhdW15Y29zOjMiOiJ3aGl0ZSIsImVyeW5kbHluOjAiOm51bGwsImVyeW5kbHluOjEiOm51bGwsImVyeW5kbHluOjIiOm51bGwsImxhYnlyaW50aDowIjoid2hpdGUiLCJsYWJ5cmludGg6MSI6bnVsbCwibGFieXJpbnRoOjIiOm51bGwsImhhbGxzLWxlZ2lvbjowIjpudWxsLCJoYWxscy1sZWdpb246MSI6IndoaXRlIiwiY2hlZC1uYXNhZDowIjpudWxsLCJjaGVkLW5hc2FkOjEiOm51bGwsImNoZWQtbmFzYWQ6MiI6bnVsbCwiY2hlZC1uYXNhZDozIjpudWxsLCJjaGNoaXRsOjAiOiJ3aGl0ZSIsImNoY2hpdGw6MSI6IndoaXRlIiwiY2hjaGl0bDoyIjpudWxsLCJwaGFlcmxpbjowIjoid2hpdGUiLCJwaGFlcmxpbjoxIjoid2hpdGUiLCJwaGFlcmxpbjoyIjpudWxsLCJsbGFjZXJlbGx5bjowIjpudWxsLCJsbGFjZXJlbGx5bjoxIjpudWxsLCJzc3p1cmFhc3NuZWU6MCI6IndoaXRlIiwic3N6dXJhYXNzbmVlOjEiOiJ3aGl0ZSIsInNzenVyYWFzc25lZToyIjpudWxsLCJ0c2VudmlpbHlxOjAiOiJ3aGl0ZSIsInRzZW52aWlseXE6MSI6IndoaXRlIiwidHNlbnZpaWx5cToyIjoid2hpdGUiLCJ5YXRoY2hvbDowIjoid2hpdGUiLCJ5YXRoY2hvbDoxIjoid2hpdGUiLCJjaGF1bHNzaW46MCI6bnVsbCwiY2hhdWxzc2luOjEiOm51bGwsImNoYXVsc3NpbjoyIjpudWxsLCJjaGF1bHNzaW46MyI6bnVsbCwiY2hhdWxzc2luOjQiOm51bGwsImRla2FudGVyOjAiOiJ3aGl0ZSIsImRla2FudGVyOjEiOiJ3aGl0ZSIsImRla2FudGVyOjIiOm51bGwsImRla2FudGVyOjMiOm51bGwsImRla2FudGVyOjQiOm51bGwsImRla2FudGVyOjUiOm51bGwsImV2ZXJmaXJlOjAiOm51bGwsImV2ZXJmaXJlOjEiOm51bGwsImV2ZXJmaXJlOjIiOm51bGwsImthbmFnbHltOjAiOm51bGwsImthbmFnbHltOjEiOm51bGwsImthbmFnbHltOjIiOm51bGwsIm1lbnotbWFudG9sOjAiOm51bGwsIm1lbnotbWFudG9sOjEiOm51bGwsIm1lbnotbWFudG9sOjIiOm51bGwsImFyYXVteWNvcy1sYWJ5OjAiOiJ3aGl0ZSIsImFyYXVteWNvcy1sYWJ5OjEiOm51bGwsIm1hbnRvbC1ibGluZ2RlbjowIjoid2hpdGUiLCJhcmF1bXljb3MtY2hhc206MCI6IndoaXRlIiwiamhhY2hhbGstYnVpeXJhbjowIjpudWxsLCJqaGFjaGFsay1ncmFja2w6MCI6bnVsbCwiY2hhc20tZ3JhY2tsOjAiOm51bGwsImNoYXNtLWdyYWNrbDoxIjpudWxsLCJlcnluZGx5bi1rYW5hZ2x5bTowIjpudWxsLCJlcnluZGx5bi1rYW5hZ2x5bToxIjpudWxsLCJsbGFjLXRzZW46MCI6bnVsbCwia2FuYWdseW0tdHNlbjowIjpudWxsLCJrYW5hZ2x5bS10c2VuOjEiOm51bGwsImNoY2hpdGwtc3RvbmVzaGFmdDowIjpudWxsLCJzdG9uZXNoYWZ0LWJ1aXlyYW5keW46MCI6bnVsbCwic3RvbmVzaGFmdC1za3VsbHBvcnQ6MCI6bnVsbCwic3RvbmVzaGFmdC1za3VsbHBvcnQ6MSI6bnVsbCwiY2hjaGl0bC1rYW5hZ2x5bTowIjpudWxsLCJrYW5hZ2x5bS1za3VsbHBvcnQ6MCI6bnVsbCwibGxhY2VyZWxseW4tc3N6dXJhYXNzbmVlOjAiOm51bGwsImxsYWNlcmVsbHluLXNzenVyYWFzc25lZToxIjpudWxsLCJzc3p1cmFhc3NuZWUtZGVrYW50ZXI6MCI6bnVsbCwiZGVrYW50ZXItcGhhZXJsaW46MCI6bnVsbCwiZGVrYW50ZXItcGhhZXJsaW46MSI6bnVsbCwibGxhY2VyZWxseW4tY2hlZC1uYXNhZDowIjpudWxsLCJsbGFjZXJlbGx5bi1jaGVkLW5hc2FkOjEiOm51bGwsImNoZWQtbmFzYWQtZGVrYW50ZXI6MCI6bnVsbCwiY2hlZC1uYXNhZC15YXRoY2hvbDowIjpudWxsLCJ5YXRoY2hvbC1waGFlcmxpbjowIjpudWxsLCJ5YXRoY2hvbC1oYWxscy1sZWdpb246MCI6bnVsbCwiaGFsbHMtbGVnaW9uLWV2ZXJmaXJlOjAiOm51bGwsImNoYXVsc3Npbi1waGFlcmxpbjowIjpudWxsLCJjaGF1bHNzaW4tZXZlcmZpcmU6MCI6bnVsbCwiZXZlcmZpcmUtbWVuem9iZXJyYW56YW46MCI6bnVsbCwiZXZlcmZpcmUtbWVuem9iZXJyYW56YW46MSI6bnVsbCwibWVuem9iZXJyYW56YW4tY2hhc21sZWFwOjAiOm51bGwsIm1lbnpvYmVycmFuemFuLWNoYXNtbGVhcDoxIjpudWxsLCJtYW50b2wtZGVyaXRoLWdyYWNrbHN0dWdoOjAiOm51bGwsIm1hbnRvbC1kZXJpdGgtd29ybXdyaXRoaW5nczowIjpudWxsLCJjaGVkLW5hc2FkLWhhbGxzLWxlZ2lvbjowIjpudWxsLCJjaGVkLW5hc2FkLWhhbGxzLWxlZ2lvbjoxIjpudWxsLCJsbGFjZXJlbGx5bi1lcnluZGx5bjowIjpudWxsLCJjaGVkLW5hc2FkLWFyYXVteWNvczowIjoid2hpdGUiLCJhcmF1bXljb3MtZXJ5bmRseW46MCI6IndoaXRlIiwiZ2F1bnRsZ3J5bS1qaGFjaGFsa2h5bjowIjpudWxsLCJidWl5cmFuZHluLWxhYnlyaW50aDowIjpudWxsLCJsYWJ5cmludGgtZ3JhY2tsc3R1Z2g6MCI6bnVsbCwic2t1bGxwb3J0LWxhYnlyaW50aDowIjpudWxsLCJza3VsbHBvcnQtbGFieXJpbnRoOjEiOm51bGwsImNoYXNtbGVhcC1ldmVyZmlyZTowIjpudWxsfSwic3BpZXMiOnt9LCJzaXRlQ29udHJvbCI6eyJnYXVudGxncnltIjpudWxsLCJibGluZ2RlbnN0b25lIjpudWxsLCJidWl5cmFuZHluIjpudWxsLCJqaGFjaGFsa2h5biI6bnVsbCwic3RvbmVzaGFmdCI6bnVsbCwiZ3JhY2tsc3R1Z2giOm51bGwsIndvcm13cml0aGluZ3MiOm51bGwsInNrdWxscG9ydCI6bnVsbCwiY2hhc21sZWFwIjpudWxsLCJtZW56b2JlcnJhbnphbiI6bnVsbCwibWFudG9sLWRlcml0aCI6bnVsbCwiYXJhdW15Y29zIjpudWxsLCJlcnluZGx5biI6bnVsbCwibGFieXJpbnRoIjpudWxsLCJoYWxscy1sZWdpb24iOm51bGwsImNoZWQtbmFzYWQiOm51bGwsImNoY2hpdGwiOm51bGwsInBoYWVybGluIjpudWxsLCJsbGFjZXJlbGx5biI6bnVsbCwic3N6dXJhYXNzbmVlIjpudWxsLCJ0c2VudmlpbHlxIjpudWxsLCJ5YXRoY2hvbCI6bnVsbCwiY2hhdWxzc2luIjpudWxsLCJkZWthbnRlciI6bnVsbCwiZXZlcmZpcmUiOm51bGwsImthbmFnbHltIjpudWxsfSwiYWN0aXZlU2l0ZXMiOlsiZ2F1bnRsZ3J5bSIsImJsaW5nZGVuc3RvbmUiLCJidWl5cmFuZHluIiwiamhhY2hhbGtoeW4iLCJzdG9uZXNoYWZ0IiwiZ3JhY2tsc3R1Z2giLCJ3b3Jtd3JpdGhpbmdzIiwic2t1bGxwb3J0IiwiY2hhc21sZWFwIiwibWVuem9iZXJyYW56YW4iLCJtYW50b2wtZGVyaXRoIiwiYXJhdW15Y29zIiwiZXJ5bmRseW4iLCJsYWJ5cmludGgiLCJoYWxscy1sZWdpb24iLCJjaGVkLW5hc2FkIiwiY2hjaGl0bCIsInBoYWVybGluIiwibGxhY2VyZWxseW4iLCJzc3p1cmFhc3NuZWUiLCJ0c2VudmlpbHlxIiwieWF0aGNob2wiLCJjaGF1bHNzaW4iLCJkZWthbnRlciIsImV2ZXJmaXJlIiwia2FuYWdseW0iXSwiYWN0aXZlU2VjdGlvbnMiOlsibGVmdCIsImNlbnRlciIsInJpZ2h0Il0sImNvbnRyb2xNYXJrZXJzIjp7ImdhdW50bGdyeW0iOnsic2l0ZUlkIjoiZ2F1bnRsZ3J5bSIsImhvbGRlciI6bnVsbCwic2lkZSI6ImNvbnRyb2wiLCJjb250cm9sSW5mbHVlbmNlIjoxLCJjb250cm9sVnAiOjAsInRvdGFsQ29udHJvbEluZmx1ZW5jZSI6MSwidG90YWxDb250cm9sVnAiOjF9LCJtZW56b2JlcnJhbnphbiI6eyJzaXRlSWQiOiJtZW56b2JlcnJhbnphbiIsImhvbGRlciI6bnVsbCwic2lkZSI6ImNvbnRyb2wiLCJjb250cm9sSW5mbHVlbmNlIjoxLCJjb250cm9sVnAiOjAsInRvdGFsQ29udHJvbEluZmx1ZW5jZSI6MSwidG90YWxDb250cm9sVnAiOjJ9LCJhcmF1bXljb3MiOnsic2l0ZUlkIjoiYXJhdW15Y29zIiwiaG9sZGVyIjpudWxsLCJzaWRlIjoiY29udHJvbCIsImNvbnRyb2xJbmZsdWVuY2UiOjEsImNvbnRyb2xWcCI6MCwidG90YWxDb250cm9sSW5mbHVlbmNlIjoxLCJ0b3RhbENvbnRyb2xWcCI6M30sImNoY2hpdGwiOnsic2l0ZUlkIjoiY2hjaGl0bCIsImhvbGRlciI6bnVsbCwic2lkZSI6ImNvbnRyb2wiLCJjb250cm9sSW5mbHVlbmNlIjoxLCJjb250cm9sVnAiOjAsInRvdGFsQ29udHJvbEluZmx1ZW5jZSI6MSwidG90YWxDb250cm9sVnAiOjF9LCJwaGFlcmxpbiI6eyJzaXRlSWQiOiJwaGFlcmxpbiIsImhvbGRlciI6bnVsbCwic2lkZSI6ImNvbnRyb2wiLCJjb250cm9sSW5mbHVlbmNlIjoxLCJjb250cm9sVnAiOjAsInRvdGFsQ29udHJvbEluZmx1ZW5jZSI6MSwidG90YWxDb250cm9sVnAiOjF9LCJzc3p1cmFhc3NuZWUiOnsic2l0ZUlkIjoic3N6dXJhYXNzbmVlIiwiaG9sZGVyIjpudWxsLCJzaWRlIjoiY29udHJvbCIsImNvbnRyb2xJbmZsdWVuY2UiOjEsImNvbnRyb2xWcCI6MCwidG90YWxDb250cm9sSW5mbHVlbmNlIjoxLCJ0b3RhbENvbnRyb2xWcCI6MX0sInRzZW52aWlseXEiOnsic2l0ZUlkIjoidHNlbnZpaWx5cSIsImhvbGRlciI6bnVsbCwic2lkZSI6ImNvbnRyb2wiLCJjb250cm9sSW5mbHVlbmNlIjoxLCJjb250cm9sVnAiOjAsInRvdGFsQ29udHJvbEluZmx1ZW5jZSI6MSwidG90YWxDb250cm9sVnAiOjF9fSwic2V0dXBQaGFzZSI6dHJ1ZSwidHVybkFzcGVjdHNQbGF5ZWQiOnt9LCJjYXJkc1BsYXllZFRoaXNUdXJuIjpbXSwicGVuZGluZ0VvdFByb21vdGlvbnMiOltdLCJwZW5kaW5nRW90SW5uZXJDaXJjbGVWcCI6W10sImRldm91cmVkUGlsZSI6W10sIm1hcmtlckluZmx1ZW5jZUdyYW50ZWRUaGlzVHVybiI6W10sIm1hcmtlclRjR3JhbnRlZFRoaXNUdXJuIjpbXSwiYWN0aXZlVHVybkNvbG9yIjoib3JhbmdlIiwidHVybkxvZ1N0YXJ0IjoxLCJlbmRHYW1lVHJpZ2dlcmVkQXRUdXJuIjpudWxsLCJsb2dUdXJuIjoxLCJsb2dTaWRlIjoiMiJ9"
+      }
+    ],
+    "log": [
+      {
+        "seq": 0,
+        "turn": 0,
+        "side": "0",
+        "kind": "game.start",
+        "msg": "Game started. P1 (black) goes first.",
+        "payload": {
+          "firstSeat": 0
+        }
+      },
+      {
+        "seq": 1,
+        "turn": 1,
+        "side": "0",
+        "kind": "turn.start",
+        "msg": "Turn: P1 (black)",
+        "payload": {
+          "player": "0",
+          "color": "black"
+        }
+      },
+      {
+        "seq": 2,
+        "turn": 1,
+        "side": "0",
+        "kind": "troop.deploy",
+        "msg": "P1 deployed starting troop at Chaulssin",
+        "payload": {
+          "site": "chaulssin",
+          "setup": true
+        }
+      },
+      {
+        "seq": 3,
+        "turn": 2,
+        "side": "1",
+        "kind": "turn.start",
+        "msg": "Turn: P2 (red)",
+        "payload": {
+          "player": "1",
+          "color": "red"
+        }
+      },
+      {
+        "seq": 4,
+        "turn": 2,
+        "side": "1",
+        "kind": "troop.deploy",
+        "msg": "P2 deployed starting troop at Ched Nasad",
+        "payload": {
+          "site": "ched-nasad",
+          "setup": true
+        }
+      },
+      {
+        "seq": 5,
+        "turn": 3,
+        "side": "2",
+        "kind": "turn.start",
+        "msg": "Turn: P3 (orange)",
+        "payload": {
+          "player": "2",
+          "color": "orange"
+        }
+      },
+      {
+        "seq": 6,
+        "turn": 3,
+        "side": "2",
+        "kind": "troop.deploy",
+        "msg": "P3 deployed starting troop at Mantol-Derith",
+        "payload": {
+          "site": "mantol-derith",
+          "setup": true
+        }
+      },
+      {
+        "seq": 7,
+        "turn": 4,
+        "side": "3",
+        "kind": "turn.start",
+        "msg": "Turn: P4 (blue)",
+        "payload": {
+          "player": "3",
+          "color": "blue"
+        }
+      },
+      {
+        "seq": 8,
+        "turn": 4,
+        "side": "3",
+        "kind": "troop.deploy",
+        "msg": "P4 deployed starting troop at Eryndlyn",
+        "payload": {
+          "site": "eryndlyn",
+          "setup": true
+        }
+      },
+      {
+        "seq": 9,
+        "turn": 4,
+        "side": "3",
+        "kind": "note",
+        "msg": "Setup complete — game begins."
+      },
+      {
+        "seq": 10,
+        "turn": 5,
+        "side": "0",
+        "kind": "turn.start",
+        "msg": "Turn: P1 (black)",
+        "payload": {
+          "player": "0",
+          "color": "black"
+        }
+      },
+      {
+        "seq": 11,
+        "turn": 5,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 12,
+        "turn": 5,
+        "side": "0",
+        "kind": "influence.gain",
+        "msg": "P1 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 13,
+        "turn": 5,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 14,
+        "turn": 5,
+        "side": "0",
+        "kind": "influence.gain",
+        "msg": "P1 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 15,
+        "turn": 5,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 16,
+        "turn": 5,
+        "side": "0",
+        "kind": "power.gain",
+        "msg": "P1 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 17,
+        "turn": 5,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 18,
+        "turn": 5,
+        "side": "0",
+        "kind": "influence.gain",
+        "msg": "P1 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 19,
+        "turn": 5,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 20,
+        "turn": 5,
+        "side": "0",
+        "kind": "power.gain",
+        "msg": "P1 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 21,
+        "turn": 5,
+        "side": "0",
+        "kind": "troop.deploy",
+        "msg": "P1 deployed at chaulssin-phaerlin:0 (barracks: 38)",
+        "payload": {
+          "site": "chaulssin-phaerlin:0"
+        }
+      },
+      {
+        "seq": 22,
+        "turn": 5,
+        "side": "0",
+        "kind": "troop.deploy",
+        "msg": "P1 deployed at phaerlin:2 (barracks: 37)",
+        "payload": {
+          "site": "phaerlin:2"
+        }
+      },
+      {
+        "seq": 23,
+        "turn": 5,
+        "side": "0",
+        "kind": "card.recruit",
+        "msg": "P1 recruited Derro",
+        "payload": {
+          "card": "Derro",
+          "from": "market"
+        }
+      },
+      {
+        "seq": 24,
+        "turn": 6,
+        "side": "1",
+        "kind": "turn.start",
+        "msg": "Turn: P2 (red)",
+        "payload": {
+          "player": "1",
+          "color": "red"
+        }
+      },
+      {
+        "seq": 25,
+        "turn": 6,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 26,
+        "turn": 6,
+        "side": "1",
+        "kind": "power.gain",
+        "msg": "P2 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 27,
+        "turn": 6,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 28,
+        "turn": 6,
+        "side": "1",
+        "kind": "influence.gain",
+        "msg": "P2 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 29,
+        "turn": 6,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 30,
+        "turn": 6,
+        "side": "1",
+        "kind": "influence.gain",
+        "msg": "P2 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 31,
+        "turn": 6,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 32,
+        "turn": 6,
+        "side": "1",
+        "kind": "influence.gain",
+        "msg": "P2 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 33,
+        "turn": 6,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 34,
+        "turn": 6,
+        "side": "1",
+        "kind": "influence.gain",
+        "msg": "P2 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 35,
+        "turn": 6,
+        "side": "1",
+        "kind": "troop.deploy",
+        "msg": "P2 deployed at llacerellyn-ched-nasad:1 (barracks: 38)",
+        "payload": {
+          "site": "llacerellyn-ched-nasad:1"
+        }
+      },
+      {
+        "seq": 36,
+        "turn": 6,
+        "side": "1",
+        "kind": "card.recruit",
+        "msg": "P2 recruited Green Wyrmling",
+        "payload": {
+          "card": "Green Wyrmling",
+          "from": "market"
+        }
+      },
+      {
+        "seq": 37,
+        "turn": 7,
+        "side": "2",
+        "kind": "turn.start",
+        "msg": "Turn: P3 (orange)",
+        "payload": {
+          "player": "2",
+          "color": "orange"
+        }
+      },
+      {
+        "seq": 38,
+        "turn": 7,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 39,
+        "turn": 7,
+        "side": "2",
+        "kind": "power.gain",
+        "msg": "P3 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 40,
+        "turn": 7,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 41,
+        "turn": 7,
+        "side": "2",
+        "kind": "power.gain",
+        "msg": "P3 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 42,
+        "turn": 7,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 43,
+        "turn": 7,
+        "side": "2",
+        "kind": "influence.gain",
+        "msg": "P3 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 44,
+        "turn": 7,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 45,
+        "turn": 7,
+        "side": "2",
+        "kind": "influence.gain",
+        "msg": "P3 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 46,
+        "turn": 7,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 47,
+        "turn": 7,
+        "side": "2",
+        "kind": "influence.gain",
+        "msg": "P3 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 48,
+        "turn": 7,
+        "side": "2",
+        "kind": "troop.deploy",
+        "msg": "P3 deployed at mantol-derith-wormwrithings:0 (barracks: 38)",
+        "payload": {
+          "site": "mantol-derith-wormwrithings:0"
+        }
+      },
+      {
+        "seq": 49,
+        "turn": 7,
+        "side": "2",
+        "kind": "troop.deploy",
+        "msg": "P3 deployed at wormwrithings:0 (barracks: 37)",
+        "payload": {
+          "site": "wormwrithings:0"
+        }
+      },
+      {
+        "seq": 50,
+        "turn": 7,
+        "side": "2",
+        "kind": "card.recruit",
+        "msg": "P3 recruited Black Wyrmling",
+        "payload": {
+          "card": "Black Wyrmling",
+          "from": "market"
+        }
+      },
+      {
+        "seq": 51,
+        "turn": 8,
+        "side": "3",
+        "kind": "turn.start",
+        "msg": "Turn: P4 (blue)",
+        "payload": {
+          "player": "3",
+          "color": "blue"
+        }
+      },
+      {
+        "seq": 52,
+        "turn": 8,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 53,
+        "turn": 8,
+        "side": "3",
+        "kind": "power.gain",
+        "msg": "P4 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 54,
+        "turn": 8,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 55,
+        "turn": 8,
+        "side": "3",
+        "kind": "power.gain",
+        "msg": "P4 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 56,
+        "turn": 8,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 57,
+        "turn": 8,
+        "side": "3",
+        "kind": "influence.gain",
+        "msg": "P4 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 58,
+        "turn": 8,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 59,
+        "turn": 8,
+        "side": "3",
+        "kind": "influence.gain",
+        "msg": "P4 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 60,
+        "turn": 8,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 61,
+        "turn": 8,
+        "side": "3",
+        "kind": "influence.gain",
+        "msg": "P4 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 62,
+        "turn": 8,
+        "side": "3",
+        "kind": "troop.deploy",
+        "msg": "P4 deployed at llacerellyn-eryndlyn:0 (barracks: 38)",
+        "payload": {
+          "site": "llacerellyn-eryndlyn:0"
+        }
+      },
+      {
+        "seq": 63,
+        "turn": 8,
+        "side": "3",
+        "kind": "troop.deploy",
+        "msg": "P4 deployed at eryndlyn-kanaglym:0 (barracks: 37)",
+        "payload": {
+          "site": "eryndlyn-kanaglym:0"
+        }
+      },
+      {
+        "seq": 64,
+        "turn": 8,
+        "side": "3",
+        "kind": "card.recruit",
+        "msg": "P4 recruited Night Hag",
+        "payload": {
+          "card": "Night Hag",
+          "from": "market"
+        }
+      },
+      {
+        "seq": 65,
+        "turn": 9,
+        "side": "0",
+        "kind": "turn.start",
+        "msg": "Turn: P1 (black)",
+        "payload": {
+          "player": "0",
+          "color": "black"
+        }
+      },
+      {
+        "seq": 66,
+        "turn": 9,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 67,
+        "turn": 9,
+        "side": "0",
+        "kind": "influence.gain",
+        "msg": "P1 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 68,
+        "turn": 9,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 69,
+        "turn": 9,
+        "side": "0",
+        "kind": "influence.gain",
+        "msg": "P1 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 70,
+        "turn": 9,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 71,
+        "turn": 9,
+        "side": "0",
+        "kind": "power.gain",
+        "msg": "P1 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 72,
+        "turn": 9,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 73,
+        "turn": 9,
+        "side": "0",
+        "kind": "influence.gain",
+        "msg": "P1 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 74,
+        "turn": 9,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 75,
+        "turn": 9,
+        "side": "0",
+        "kind": "influence.gain",
+        "msg": "P1 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 76,
+        "turn": 9,
+        "side": "0",
+        "kind": "card.recruit",
+        "msg": "P1 recruited Enchanter of Thay",
+        "payload": {
+          "card": "Enchanter of Thay",
+          "from": "market"
+        }
+      },
+      {
+        "seq": 77,
+        "turn": 9,
+        "side": "0",
+        "kind": "troop.deploy",
+        "msg": "P1 deployed at chaulssin-everfire:0 (barracks: 36)",
+        "payload": {
+          "site": "chaulssin-everfire:0"
+        }
+      },
+      {
+        "seq": 78,
+        "turn": 10,
+        "side": "1",
+        "kind": "turn.start",
+        "msg": "Turn: P2 (red)",
+        "payload": {
+          "player": "1",
+          "color": "red"
+        }
+      },
+      {
+        "seq": 79,
+        "turn": 10,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 80,
+        "turn": 10,
+        "side": "1",
+        "kind": "power.gain",
+        "msg": "P2 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 81,
+        "turn": 10,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 82,
+        "turn": 10,
+        "side": "1",
+        "kind": "power.gain",
+        "msg": "P2 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 83,
+        "turn": 10,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 84,
+        "turn": 10,
+        "side": "1",
+        "kind": "influence.gain",
+        "msg": "P2 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 85,
+        "turn": 10,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 86,
+        "turn": 10,
+        "side": "1",
+        "kind": "influence.gain",
+        "msg": "P2 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 87,
+        "turn": 10,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 88,
+        "turn": 10,
+        "side": "1",
+        "kind": "influence.gain",
+        "msg": "P2 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 89,
+        "turn": 10,
+        "side": "1",
+        "kind": "troop.deploy",
+        "msg": "P2 deployed at llacerellyn-ched-nasad:0 (barracks: 37)",
+        "payload": {
+          "site": "llacerellyn-ched-nasad:0"
+        }
+      },
+      {
+        "seq": 90,
+        "turn": 10,
+        "side": "1",
+        "kind": "troop.deploy",
+        "msg": "P2 deployed at ched-nasad-dekanter:0 (barracks: 36)",
+        "payload": {
+          "site": "ched-nasad-dekanter:0"
+        }
+      },
+      {
+        "seq": 91,
+        "turn": 10,
+        "side": "1",
+        "kind": "card.recruit",
+        "msg": "P2 recruited Dragon Cultist",
+        "payload": {
+          "card": "Dragon Cultist",
+          "from": "market"
+        }
+      },
+      {
+        "seq": 92,
+        "turn": 11,
+        "side": "2",
+        "kind": "turn.start",
+        "msg": "Turn: P3 (orange)",
+        "payload": {
+          "player": "2",
+          "color": "orange"
+        }
+      },
+      {
+        "seq": 93,
+        "turn": 11,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 94,
+        "turn": 11,
+        "side": "2",
+        "kind": "power.gain",
+        "msg": "P3 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 95,
+        "turn": 11,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 96,
+        "turn": 11,
+        "side": "2",
+        "kind": "influence.gain",
+        "msg": "P3 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 97,
+        "turn": 11,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 98,
+        "turn": 11,
+        "side": "2",
+        "kind": "influence.gain",
+        "msg": "P3 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 99,
+        "turn": 11,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 100,
+        "turn": 11,
+        "side": "2",
+        "kind": "influence.gain",
+        "msg": "P3 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 101,
+        "turn": 11,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 102,
+        "turn": 11,
+        "side": "2",
+        "kind": "influence.gain",
+        "msg": "P3 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 103,
+        "turn": 11,
+        "side": "2",
+        "kind": "troop.deploy",
+        "msg": "P3 deployed at gauntlgrym:2 (barracks: 36)",
+        "payload": {
+          "site": "gauntlgrym:2"
+        }
+      },
+      {
+        "seq": 104,
+        "turn": 11,
+        "side": "2",
+        "kind": "card.recruit",
+        "msg": "P3 recruited Dragon Cultist",
+        "payload": {
+          "card": "Dragon Cultist",
+          "from": "market"
+        }
+      },
+      {
+        "seq": 105,
+        "turn": 11,
+        "side": "2",
+        "kind": "card.recruit",
+        "msg": "P3 recruited Kobold",
+        "payload": {
+          "card": "Kobold",
+          "from": "market"
+        }
+      },
+      {
+        "seq": 106,
+        "turn": 12,
+        "side": "3",
+        "kind": "turn.start",
+        "msg": "Turn: P4 (blue)",
+        "payload": {
+          "player": "3",
+          "color": "blue"
+        }
+      },
+      {
+        "seq": 107,
+        "turn": 12,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 108,
+        "turn": 12,
+        "side": "3",
+        "kind": "power.gain",
+        "msg": "P4 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 109,
+        "turn": 12,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 110,
+        "turn": 12,
+        "side": "3",
+        "kind": "influence.gain",
+        "msg": "P4 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 111,
+        "turn": 12,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 112,
+        "turn": 12,
+        "side": "3",
+        "kind": "influence.gain",
+        "msg": "P4 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 113,
+        "turn": 12,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 114,
+        "turn": 12,
+        "side": "3",
+        "kind": "influence.gain",
+        "msg": "P4 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 115,
+        "turn": 12,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 116,
+        "turn": 12,
+        "side": "3",
+        "kind": "influence.gain",
+        "msg": "P4 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 117,
+        "turn": 12,
+        "side": "3",
+        "kind": "troop.deploy",
+        "msg": "P4 deployed at eryndlyn-kanaglym:1 (barracks: 36)",
+        "payload": {
+          "site": "eryndlyn-kanaglym:1"
+        }
+      },
+      {
+        "seq": 118,
+        "turn": 12,
+        "side": "3",
+        "kind": "card.recruit",
+        "msg": "P4 recruited White Wyrmling",
+        "payload": {
+          "card": "White Wyrmling",
+          "from": "market"
+        }
+      },
+      {
+        "seq": 119,
+        "turn": 12,
+        "side": "3",
+        "kind": "card.recruit",
+        "msg": "P4 recruited Priestess of Lolth (14 left in stack)",
+        "payload": {
+          "card": "Priestess of Lolth",
+          "from": "priestesses"
+        }
+      },
+      {
+        "seq": 120,
+        "turn": 13,
+        "side": "0",
+        "kind": "turn.start",
+        "msg": "Turn: P1 (black)",
+        "payload": {
+          "player": "0",
+          "color": "black"
+        }
+      },
+      {
+        "seq": 121,
+        "turn": 13,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 122,
+        "turn": 13,
+        "side": "0",
+        "kind": "influence.gain",
+        "msg": "P1 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 123,
+        "turn": 13,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 124,
+        "turn": 13,
+        "side": "0",
+        "kind": "influence.gain",
+        "msg": "P1 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 125,
+        "turn": 13,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 126,
+        "turn": 13,
+        "side": "0",
+        "kind": "influence.gain",
+        "msg": "P1 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 127,
+        "turn": 13,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 128,
+        "turn": 13,
+        "side": "0",
+        "kind": "power.gain",
+        "msg": "P1 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 129,
+        "turn": 13,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Enchanter of Thay",
+        "payload": {
+          "card": "Enchanter of Thay"
+        }
+      },
+      {
+        "seq": 130,
+        "turn": 13,
+        "side": "0",
+        "kind": "note",
+        "msg": "P1 placed spy at menzoberranzan (spies left: 4)"
+      },
+      {
+        "seq": 131,
+        "turn": 13,
+        "side": "0",
+        "kind": "troop.deploy",
+        "msg": "P1 deployed at menzoberranzan:3 (barracks: 35)",
+        "payload": {
+          "site": "menzoberranzan:3"
+        }
+      },
+      {
+        "seq": 132,
+        "turn": 13,
+        "side": "0",
+        "kind": "card.recruit",
+        "msg": "P1 recruited Wyrmspeaker",
+        "payload": {
+          "card": "Wyrmspeaker",
+          "from": "market"
+        }
+      },
+      {
+        "seq": 133,
+        "turn": 14,
+        "side": "1",
+        "kind": "turn.start",
+        "msg": "Turn: P2 (red)",
+        "payload": {
+          "player": "1",
+          "color": "red"
+        }
+      },
+      {
+        "seq": 134,
+        "turn": 14,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 135,
+        "turn": 14,
+        "side": "1",
+        "kind": "power.gain",
+        "msg": "P2 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 136,
+        "turn": 14,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 137,
+        "turn": 14,
+        "side": "1",
+        "kind": "power.gain",
+        "msg": "P2 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 138,
+        "turn": 14,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Green Wyrmling",
+        "payload": {
+          "card": "Green Wyrmling"
+        }
+      },
+      {
+        "seq": 139,
+        "turn": 14,
+        "side": "1",
+        "kind": "note",
+        "msg": "P2 placed spy at menzoberranzan (spies left: 4)"
+      },
+      {
+        "seq": 140,
+        "turn": 14,
+        "side": "1",
+        "kind": "note",
+        "msg": "(spy-site another-player-troop bonus triggered at menzoberranzan)"
+      },
+      {
+        "seq": 141,
+        "turn": 14,
+        "side": "1",
+        "kind": "influence.gain",
+        "msg": "P2 +2 Influence",
+        "payload": {
+          "amount": 2
+        }
+      },
+      {
+        "seq": 142,
+        "turn": 14,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 143,
+        "turn": 14,
+        "side": "1",
+        "kind": "influence.gain",
+        "msg": "P2 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 144,
+        "turn": 14,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 145,
+        "turn": 14,
+        "side": "1",
+        "kind": "influence.gain",
+        "msg": "P2 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 146,
+        "turn": 14,
+        "side": "1",
+        "kind": "troop.deploy",
+        "msg": "P2 deployed at menzoberranzan:4 (barracks: 35)",
+        "payload": {
+          "site": "menzoberranzan:4"
+        }
+      },
+      {
+        "seq": 147,
+        "turn": 14,
+        "side": "1",
+        "kind": "troop.deploy",
+        "msg": "P2 deployed at menzoberranzan:5 (barracks: 34)",
+        "payload": {
+          "site": "menzoberranzan:5"
+        }
+      },
+      {
+        "seq": 148,
+        "turn": 14,
+        "side": "1",
+        "kind": "card.recruit",
+        "msg": "P2 recruited Myconid Adult",
+        "payload": {
+          "card": "Myconid Adult",
+          "from": "market"
+        }
+      },
+      {
+        "seq": 149,
+        "turn": 15,
+        "side": "2",
+        "kind": "turn.start",
+        "msg": "Turn: P3 (orange)",
+        "payload": {
+          "player": "2",
+          "color": "orange"
+        }
+      },
+      {
+        "seq": 150,
+        "turn": 15,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 151,
+        "turn": 15,
+        "side": "2",
+        "kind": "power.gain",
+        "msg": "P3 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 152,
+        "turn": 15,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Black Wyrmling",
+        "payload": {
+          "card": "Black Wyrmling"
+        }
+      },
+      {
+        "seq": 153,
+        "turn": 15,
+        "side": "2",
+        "kind": "influence.gain",
+        "msg": "P3 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 154,
+        "turn": 15,
+        "side": "2",
+        "kind": "troop.assassinate",
+        "msg": "P3 assassinated white at gauntlgrym:0",
+        "payload": {
+          "site": "gauntlgrym:0",
+          "target": "white"
+        }
+      },
+      {
+        "seq": 155,
+        "turn": 15,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 156,
+        "turn": 15,
+        "side": "2",
+        "kind": "influence.gain",
+        "msg": "P3 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 157,
+        "turn": 15,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 158,
+        "turn": 15,
+        "side": "2",
+        "kind": "influence.gain",
+        "msg": "P3 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 159,
+        "turn": 15,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 160,
+        "turn": 15,
+        "side": "2",
+        "kind": "influence.gain",
+        "msg": "P3 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 161,
+        "turn": 15,
+        "side": null,
+        "kind": "site.control",
+        "msg": "gauntlgrym control marker → orange (from map)",
+        "payload": {
+          "site": "gauntlgrym",
+          "controller": "orange",
+          "previous": null
+        }
+      },
+      {
+        "seq": 162,
+        "turn": 15,
+        "side": "2",
+        "kind": "marker.reward",
+        "msg": "P3 +1 influence from gauntlgrym control marker",
+        "payload": {
+          "site": "gauntlgrym",
+          "influence": 1,
+          "vp": 0,
+          "totalControl": false
+        }
+      },
+      {
+        "seq": 163,
+        "turn": 15,
+        "side": "2",
+        "kind": "troop.deploy",
+        "msg": "P3 deployed at gauntlgrym:0 (barracks: 35)",
+        "payload": {
+          "site": "gauntlgrym:0"
+        }
+      },
+      {
+        "seq": 164,
+        "turn": 15,
+        "side": "2",
+        "kind": "card.recruit",
+        "msg": "P3 recruited Blue Wyrmling",
+        "payload": {
+          "card": "Blue Wyrmling",
+          "from": "market"
+        }
+      },
+      {
+        "seq": 165,
+        "turn": 16,
+        "side": "3",
+        "kind": "turn.start",
+        "msg": "Turn: P4 (blue)",
+        "payload": {
+          "player": "3",
+          "color": "blue"
+        }
+      },
+      {
+        "seq": 166,
+        "turn": 16,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 167,
+        "turn": 16,
+        "side": "3",
+        "kind": "influence.gain",
+        "msg": "P4 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 168,
+        "turn": 16,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 169,
+        "turn": 16,
+        "side": "3",
+        "kind": "influence.gain",
+        "msg": "P4 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 170,
+        "turn": 16,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 171,
+        "turn": 16,
+        "side": "3",
+        "kind": "influence.gain",
+        "msg": "P4 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 172,
+        "turn": 16,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 173,
+        "turn": 16,
+        "side": "3",
+        "kind": "influence.gain",
+        "msg": "P4 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 174,
+        "turn": 16,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 175,
+        "turn": 16,
+        "side": "3",
+        "kind": "influence.gain",
+        "msg": "P4 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 176,
+        "turn": 16,
+        "side": "3",
+        "kind": "card.recruit",
+        "msg": "P4 recruited Red Wyrmling",
+        "payload": {
+          "card": "Red Wyrmling",
+          "from": "market"
+        }
+      },
+      {
+        "seq": 177,
+        "turn": 17,
+        "side": "0",
+        "kind": "turn.start",
+        "msg": "Turn: P1 (black)",
+        "payload": {
+          "player": "0",
+          "color": "black"
+        }
+      },
+      {
+        "seq": 178,
+        "turn": 17,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 179,
+        "turn": 17,
+        "side": "0",
+        "kind": "power.gain",
+        "msg": "P1 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 180,
+        "turn": 17,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 181,
+        "turn": 17,
+        "side": "0",
+        "kind": "influence.gain",
+        "msg": "P1 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 182,
+        "turn": 17,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 183,
+        "turn": 17,
+        "side": "0",
+        "kind": "power.gain",
+        "msg": "P1 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 184,
+        "turn": 17,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 185,
+        "turn": 17,
+        "side": "0",
+        "kind": "influence.gain",
+        "msg": "P1 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 186,
+        "turn": 17,
+        "side": "0",
+        "kind": "card.play",
+        "msg": "P1 played Derro",
+        "payload": {
+          "card": "Derro"
+        }
+      },
+      {
+        "seq": 187,
+        "turn": 17,
+        "side": null,
+        "kind": "site.control",
+        "msg": "phaerlin control marker → black (from map)",
+        "payload": {
+          "site": "phaerlin",
+          "controller": "black",
+          "previous": null
+        }
+      },
+      {
+        "seq": 188,
+        "turn": 17,
+        "side": "0",
+        "kind": "marker.reward",
+        "msg": "P1 +1 influence from phaerlin control marker",
+        "payload": {
+          "site": "phaerlin",
+          "influence": 1,
+          "vp": 0,
+          "totalControl": false
+        }
+      },
+      {
+        "seq": 189,
+        "turn": 17,
+        "side": "0",
+        "kind": "troop.supplant",
+        "msg": "P1 supplanted white at phaerlin:1 (barracks: 34)",
+        "payload": {
+          "site": "phaerlin:1",
+          "target": "white"
+        }
+      },
+      {
+        "seq": 190,
+        "turn": 17,
+        "side": "0",
+        "kind": "note",
+        "msg": "P1 added Insane Outcast to discard"
+      },
+      {
+        "seq": 191,
+        "turn": 17,
+        "side": "0",
+        "kind": "card.recruit",
+        "msg": "P1 recruited Myconid Adult",
+        "payload": {
+          "card": "Myconid Adult",
+          "from": "market"
+        }
+      },
+      {
+        "seq": 192,
+        "turn": 17,
+        "side": "0",
+        "kind": "troop.deploy",
+        "msg": "P1 deployed at everfire:0 (barracks: 33)",
+        "payload": {
+          "site": "everfire:0"
+        }
+      },
+      {
+        "seq": 193,
+        "turn": 17,
+        "side": "0",
+        "kind": "troop.deploy",
+        "msg": "P1 deployed at everfire:1 (barracks: 32)",
+        "payload": {
+          "site": "everfire:1"
+        }
+      },
+      {
+        "seq": 194,
+        "turn": 18,
+        "side": "1",
+        "kind": "turn.start",
+        "msg": "Turn: P2 (red)",
+        "payload": {
+          "player": "1",
+          "color": "red"
+        }
+      },
+      {
+        "seq": 195,
+        "turn": 18,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 196,
+        "turn": 18,
+        "side": "1",
+        "kind": "power.gain",
+        "msg": "P2 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 197,
+        "turn": 18,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Dragon Cultist",
+        "payload": {
+          "card": "Dragon Cultist"
+        }
+      },
+      {
+        "seq": 198,
+        "turn": 18,
+        "side": "1",
+        "kind": "influence.gain",
+        "msg": "P2 +2 Influence",
+        "payload": {
+          "amount": 2
+        }
+      },
+      {
+        "seq": 199,
+        "turn": 18,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 200,
+        "turn": 18,
+        "side": "1",
+        "kind": "influence.gain",
+        "msg": "P2 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 201,
+        "turn": 18,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 202,
+        "turn": 18,
+        "side": "1",
+        "kind": "influence.gain",
+        "msg": "P2 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 203,
+        "turn": 18,
+        "side": "1",
+        "kind": "card.play",
+        "msg": "P2 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 204,
+        "turn": 18,
+        "side": "1",
+        "kind": "influence.gain",
+        "msg": "P2 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 205,
+        "turn": 18,
+        "side": "1",
+        "kind": "troop.deploy",
+        "msg": "P2 deployed at menz-mantol:0 (barracks: 33)",
+        "payload": {
+          "site": "menz-mantol:0"
+        }
+      },
+      {
+        "seq": 206,
+        "turn": 18,
+        "side": "1",
+        "kind": "card.recruit",
+        "msg": "P2 recruited Red Wyrmling",
+        "payload": {
+          "card": "Red Wyrmling",
+          "from": "market"
+        }
+      },
+      {
+        "seq": 207,
+        "turn": 19,
+        "side": "2",
+        "kind": "turn.start",
+        "msg": "Turn: P3 (orange)",
+        "payload": {
+          "player": "2",
+          "color": "orange"
+        }
+      },
+      {
+        "seq": 208,
+        "turn": 19,
+        "side": "2",
+        "kind": "marker.reward",
+        "msg": "P3 +1 influence from gauntlgrym control marker",
+        "payload": {
+          "site": "gauntlgrym",
+          "influence": 1,
+          "vp": 0,
+          "totalControl": false
+        }
+      },
+      {
+        "seq": 209,
+        "turn": 19,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 210,
+        "turn": 19,
+        "side": "2",
+        "kind": "power.gain",
+        "msg": "P3 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 211,
+        "turn": 19,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 212,
+        "turn": 19,
+        "side": "2",
+        "kind": "power.gain",
+        "msg": "P3 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 213,
+        "turn": 19,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Dragon Cultist",
+        "payload": {
+          "card": "Dragon Cultist"
+        }
+      },
+      {
+        "seq": 214,
+        "turn": 19,
+        "side": "2",
+        "kind": "power.gain",
+        "msg": "P3 +2 Power",
+        "payload": {
+          "amount": 2
+        }
+      },
+      {
+        "seq": 215,
+        "turn": 19,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 216,
+        "turn": 19,
+        "side": "2",
+        "kind": "influence.gain",
+        "msg": "P3 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 217,
+        "turn": 19,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 218,
+        "turn": 19,
+        "side": "2",
+        "kind": "influence.gain",
+        "msg": "P3 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 219,
+        "turn": 19,
+        "side": "2",
+        "kind": "troop.assassinate",
+        "msg": "P3 assassinated white at gauntlgrym:1",
+        "payload": {
+          "site": "gauntlgrym:1",
+          "target": "white"
+        }
+      },
+      {
+        "seq": 220,
+        "turn": 19,
+        "side": "2",
+        "kind": "marker.reward",
+        "msg": "P3 +1 VP from gauntlgrym control marker (upgrade to TOTAL CONTROL)",
+        "payload": {
+          "site": "gauntlgrym",
+          "influence": 0,
+          "vp": 1,
+          "totalControl": true
+        }
+      },
+      {
+        "seq": 221,
+        "turn": 19,
+        "side": "2",
+        "kind": "troop.deploy",
+        "msg": "P3 deployed at gauntlgrym:1 (barracks: 34)",
+        "payload": {
+          "site": "gauntlgrym:1"
+        }
+      },
+      {
+        "seq": 222,
+        "turn": 19,
+        "side": "2",
+        "kind": "card.recruit",
+        "msg": "P3 recruited White Wyrmling",
+        "payload": {
+          "card": "White Wyrmling",
+          "from": "market"
+        }
+      },
+      {
+        "seq": 223,
+        "turn": 20,
+        "side": "3",
+        "kind": "turn.start",
+        "msg": "Turn: P4 (blue)",
+        "payload": {
+          "player": "3",
+          "color": "blue"
+        }
+      },
+      {
+        "seq": 224,
+        "turn": 20,
+        "side": null,
+        "kind": "system",
+        "msg": "[state loaded from codec]"
+      },
+      {
+        "seq": 225,
+        "turn": 20,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 226,
+        "turn": 20,
+        "side": "2",
+        "kind": "power.gain",
+        "msg": "P3 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 227,
+        "turn": 20,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Kobold",
+        "payload": {
+          "card": "Kobold"
+        }
+      },
+      {
+        "seq": 228,
+        "turn": 20,
+        "side": "2",
+        "kind": "troop.assassinate",
+        "msg": "P3 assassinated white at mantol-derith:0",
+        "payload": {
+          "site": "mantol-derith:0",
+          "target": "white"
+        }
+      },
+      {
+        "seq": 229,
+        "turn": 20,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Black Wyrmling",
+        "payload": {
+          "card": "Black Wyrmling"
+        }
+      },
+      {
+        "seq": 230,
+        "turn": 20,
+        "side": "2",
+        "kind": "influence.gain",
+        "msg": "P3 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 231,
+        "turn": 20,
+        "side": "2",
+        "kind": "troop.assassinate",
+        "msg": "P3 assassinated white at mantol-derith:1",
+        "payload": {
+          "site": "mantol-derith:1",
+          "target": "white"
+        }
+      },
+      {
+        "seq": 232,
+        "turn": 20,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 233,
+        "turn": 20,
+        "side": "2",
+        "kind": "influence.gain",
+        "msg": "P3 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 234,
+        "turn": 20,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 235,
+        "turn": 20,
+        "side": "2",
+        "kind": "influence.gain",
+        "msg": "P3 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 236,
+        "turn": 20,
+        "side": "2",
+        "kind": "troop.deploy",
+        "msg": "P3 deployed at menz-mantol:2 (barracks: 33)",
+        "payload": {
+          "site": "menz-mantol:2"
+        }
+      },
+      {
+        "seq": 237,
+        "turn": 20,
+        "side": "2",
+        "kind": "card.recruit",
+        "msg": "P3 recruited House Guard (14 left in stack)",
+        "payload": {
+          "card": "House Guard",
+          "from": "houseGuards"
+        }
+      },
+      {
+        "seq": 238,
+        "turn": 2,
+        "side": "3",
+        "kind": "turn.start",
+        "msg": "Turn: P4 (blue)",
+        "payload": {
+          "player": "3",
+          "color": "blue"
+        }
+      },
+      {
+        "seq": 239,
+        "turn": 2,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played Soldier",
+        "payload": {
+          "card": "Soldier"
+        }
+      },
+      {
+        "seq": 240,
+        "turn": 2,
+        "side": "3",
+        "kind": "power.gain",
+        "msg": "P4 +1 Power",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 241,
+        "turn": 2,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played White Wyrmling",
+        "payload": {
+          "card": "White Wyrmling"
+        }
+      },
+      {
+        "seq": 242,
+        "turn": 2,
+        "side": "3",
+        "kind": "troop.deploy",
+        "msg": "P4 deployed at kanaglym:0 (barracks: 35)",
+        "payload": {
+          "site": "kanaglym:0"
+        }
+      },
+      {
+        "seq": 243,
+        "turn": 2,
+        "side": "3",
+        "kind": "troop.deploy",
+        "msg": "P4 deployed at chchitl-kanaglym:0 (barracks: 34)",
+        "payload": {
+          "site": "chchitl-kanaglym:0"
+        }
+      },
+      {
+        "seq": 244,
+        "turn": 2,
+        "side": "3",
+        "kind": "card.devour",
+        "msg": "Demogorgon devoured",
+        "payload": {
+          "card": "Demogorgon"
+        }
+      },
+      {
+        "seq": 245,
+        "turn": 2,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 246,
+        "turn": 2,
+        "side": "3",
+        "kind": "influence.gain",
+        "msg": "P4 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 247,
+        "turn": 2,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played Noble",
+        "payload": {
+          "card": "Noble"
+        }
+      },
+      {
+        "seq": 248,
+        "turn": 2,
+        "side": "3",
+        "kind": "influence.gain",
+        "msg": "P4 +1 Influence",
+        "payload": {
+          "amount": 1
+        }
+      },
+      {
+        "seq": 249,
+        "turn": 2,
+        "side": "3",
+        "kind": "card.play",
+        "msg": "P4 played Priestess of Lolth",
+        "payload": {
+          "card": "Priestess of Lolth"
+        }
+      },
+      {
+        "seq": 250,
+        "turn": 2,
+        "side": "3",
+        "kind": "influence.gain",
+        "msg": "P4 +2 Influence",
+        "payload": {
+          "amount": 2
+        }
+      },
+      {
+        "seq": 251,
+        "turn": 2,
+        "side": "3",
+        "kind": "troop.deploy",
+        "msg": "P4 deployed at chchitl:2 (barracks: 33)",
+        "payload": {
+          "site": "chchitl:2"
+        }
+      },
+      {
+        "seq": 252,
+        "turn": 2,
+        "side": "3",
+        "kind": "card.recruit",
+        "msg": "P4 recruited Jackalwere",
+        "payload": {
+          "card": "Jackalwere",
+          "from": "market"
+        }
+      },
+      {
+        "seq": 253,
+        "turn": 3,
+        "side": "0",
+        "kind": "turn.start",
+        "msg": "Turn: P1 (black)",
+        "payload": {
+          "player": "0",
+          "color": "black"
+        }
+      },
+      {
+        "seq": 254,
+        "turn": 3,
+        "side": "0",
+        "kind": "marker.reward",
+        "msg": "P1 +1 influence from phaerlin control marker",
+        "payload": {
+          "site": "phaerlin",
+          "influence": 1,
+          "vp": 0,
+          "totalControl": false
+        }
+      },
+      {
+        "seq": 255,
+        "turn": 3,
+        "side": null,
+        "kind": "system",
+        "msg": "[state loaded from codec]"
+      },
+      {
+        "seq": 256,
+        "turn": 3,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Dragon Cultist",
+        "payload": {
+          "card": "Dragon Cultist"
+        }
+      },
+      {
+        "seq": 257,
+        "turn": 3,
+        "side": "2",
+        "kind": "influence.gain",
+        "msg": "P3 +2 Influence",
+        "payload": {
+          "amount": 2
+        }
+      },
+      {
+        "seq": 258,
+        "turn": 3,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played Blue Wyrmling",
+        "payload": {
+          "card": "Blue Wyrmling"
+        }
+      },
+      {
+        "seq": 259,
+        "turn": 3,
+        "side": "2",
+        "kind": "influence.gain",
+        "msg": "P3 +3 Influence",
+        "payload": {
+          "amount": 3
+        }
+      },
+      {
+        "seq": 260,
+        "turn": 3,
+        "side": "0",
+        "kind": "note",
+        "msg": "(chooseOne: no legal options — skipped)"
+      },
+      {
+        "seq": 261,
+        "turn": 3,
+        "side": "2",
+        "kind": "card.play",
+        "msg": "P3 played White Wyrmling",
+        "payload": {
+          "card": "White Wyrmling"
+        }
+      },
+      {
+        "seq": 262,
+        "turn": 3,
+        "side": "2",
+        "kind": "troop.deploy",
+        "msg": "P3 deployed at gauntlgrym-jhachalkhyn:0 (barracks: 32)",
+        "payload": {
+          "site": "gauntlgrym-jhachalkhyn:0"
+        }
+      }
+    ],
+    "archivedAt": "2026-09-30T14:52:59.959Z"
+  }
+}
