@@ -273,6 +273,12 @@ export const COLORS: Color[] = ['black', 'red', 'orange', 'blue'];
 export const SELECTABLE_COLORS: Color[] = [
   ...COLORS, 'purple', 'green', 'teal', 'pink', 'yellow',
 ];
+// The order seats nobody chose a colour for (the AI seats in solo play) take
+// the leftover canonical colours. Black goes last: it is the hardest colour to
+// pick out on the map, so an AI should only get it once red, orange and blue
+// are all taken. (Player feedback: with any pick other than black, the first
+// AI always came out black.)
+export const LEFTOVER_COLORS: Color[] = ['red', 'orange', 'blue', 'black'];
 const HAND_SIZE = 5;
 // Max per-turn state snapshots kept for the hotseat "Load turn" rewind. Bounds
 // the persisted state size (each snapshot is a full state codec). See onBegin.
@@ -555,11 +561,12 @@ export const TyrantsGame: Game<TyrantsState> = {
     // that's hard to pick out against the board); `humanColor` is the older
     // solo/hotseat form that only chooses seat 0's. Any seat left uncovered
     // falls back to the classic four, skipping colours already handed out so a
-    // partial list can't produce two seats of the same colour.
+    // partial list can't produce two seats of the same colour — black last
+    // (LEFTOVER_COLORS). With no pick at all, the plain seat order is kept.
     const explicit = setupData?.seatColors ?? (setupData?.humanColor ? [setupData.humanColor] : []);
     const colorOrder: Color[] = [];
     const taken = new Set<Color>(explicit.slice(0, ctx.numPlayers));
-    const spare = COLORS.filter(c => !taken.has(c));
+    const spare = (explicit.length ? LEFTOVER_COLORS : COLORS).filter(c => !taken.has(c));
     for (let i = 0; i < ctx.numPlayers; i++) {
       colorOrder.push(explicit[i] ?? spare.shift() ?? COLORS[i % COLORS.length]);
     }
