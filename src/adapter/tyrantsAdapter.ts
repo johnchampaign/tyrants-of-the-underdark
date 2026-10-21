@@ -357,9 +357,15 @@ function hideCards(cards: CardRef[]): CardRef[] {
 }
 
 function redactState(state: BgioState, viewer: PlayerId | null): BgioState {
-  // structuredClone keeps the full bgio state shape (ctx/plugins ride along).
-  const next = structuredClone(state);
-  const G = next.G;
+  // Copy-on-redact: copy only the containers changed below and share the rest
+  // with `state` (ctx/plugins ride along by reference). A whole-state
+  // structuredClone here ran once per poll and once per server-AI step — a
+  // third of the AI's per-request CPU against Cloudflare's per-request limit.
+  // The view is read-only: the server serialises it and the AI controllers
+  // only read it.
+  const G = { ...state.G, players: { ...state.G.players }, market: { ...state.G.market } };
+  for (const pid of Object.keys(G.players)) G.players[pid] = { ...G.players[pid] };
+  const next = { ...state, G };
 
   for (const [pid, p] of Object.entries(G.players)) {
     if (pid === viewer) {
@@ -471,9 +477,10 @@ export const tyrantsAdapter: GameAdapter<BgioState, TyrantsAction, PlayerId> = {
   schemaVersion: 2,
 
   applyAction(state, action, actor) {
-    // bgio's reducer is pure given (state, action) and clones internally, but
-    // we structuredClone defensively so callers never observe shared mutation.
-    const input = structuredClone(state);
+    // bgio's reducer is pure given (state, action) — immer produces new objects
+    // and never writes to its input — so no defensive clone: a whole-state
+    // structuredClone per action was a third of the server AI's CPU.
+    const input = state;
     const next = reducer()(input, toBgioAction(action, actor, input.ctx.currentPlayer));
     if (next === input || next.G === input.G) {
       // bgio returns the same top-level reference on INVALID_MOVE.
@@ -483,7 +490,8 @@ export const tyrantsAdapter: GameAdapter<BgioState, TyrantsAction, PlayerId> = {
   },
 
   tryApplyAction(state, action, actor) {
-    const input = structuredClone(state);
+    const input = state; // pure reducer — see applyAction
+
     let next: BgioState;
     try {
       next = reducer()(input, toBgioAction(action, actor, input.ctx.currentPlayer));

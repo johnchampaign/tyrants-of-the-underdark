@@ -729,6 +729,10 @@ export const TyrantsGame: Game<TyrantsState> = {
       payHeldMarkerEffectsAtTurnStart(G, G.players[ctx.currentPlayer].color);
       // Capture a snapshot of the game state at turn start (excluding the snapshots
       // field itself to prevent recursive bloat). loadState can rewind here.
+      // Online never reads them (loadState is a no-op, the codec and viewFor
+      // strip them), and encoding the whole G every turn was ~11% of the server
+      // AI's CPU — so skip it there.
+      if (G._online) return;
       G.snapshots.push({
         turn: ctx.turn,
         playerId: ctx.currentPlayer,

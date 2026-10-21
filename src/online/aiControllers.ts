@@ -54,7 +54,9 @@ function toAction(move: AiMove | null): TyrantsAction | null {
 }
 
 /** Build a PlayerController from one of the synchronous decide-fns. The fn sees
- *  the raw bgio G (the server hands AI seats the full state). We translate its
+ *  the seat's redacted view G (the framework hands each AI seat viewFor(state,
+ *  seat)) and must only read it — the view shares structure with the real
+ *  state. We translate its
  *  move and validate it against the adapter's legal actions; on any miss we play
  *  the first legal action so the seat always advances. */
 function controllerFrom(decide: Decide): Ctrl {
@@ -94,8 +96,11 @@ export const tyrantsControllers: Record<string, Ctrl> = {
  *  Aberrations card (Chuul, Nothic, Gauth…) hands a forced-discard prompt to
  *  each opponent and then back to the player, so perSeat would add two ~0.2 s
  *  round trips per prompt (~11% of AI turns in 3–4p AI games). Instead cap by
- *  work: a server AI action costs ~10–12 ms (node; one turn ≈ 10 actions,
- *  ~110 ms mean, up to ~400–550 ms), so 10 steps ≈ one typical turn per
- *  request (p90 ~190 ms, max ~260 ms measured) — the brief's floor, since
- *  30–50 ms of work would be only 3–5 actions here. */
-export const TYRANTS_AI_SLICE = { maxSteps: 10 } as const;
+ *  work. 10 steps (~40–130 ms CPU in production mode) tripped Cloudflare's
+ *  per-request CPU limit in bursts: a killed slice saves nothing, so every
+ *  poll re-ran one and was killed again (253 kills in one hour, Oct 2026).
+ *  With the per-step clones and the online turn-start snapshot gone, a step is
+ *  ~2.4 ms p50 / 8 ms max (node, production mode), so 3 steps ≈ 9–15 ms per
+ *  request including decode/encode/transport; the client's aiPending refetch
+ *  carries the turn on. */
+export const TYRANTS_AI_SLICE = { maxSteps: 3 } as const;
