@@ -51,10 +51,30 @@ async function dbPut(key: string, blob: Blob): Promise<void> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE, 'readwrite');
-    tx.objectStore(STORE).put(blob, key);
+    const req = tx.objectStore(STORE).put(blob, key);
     tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
+    // The request carries the real DOMException; WebKit can leave tx.error null
+    // when onerror fires, which made every failed save reject with nothing.
+    tx.onerror = () => reject(req.error ?? tx.error ?? new Error('IndexedDB put failed'));
+    tx.onabort = () => reject(req.error ?? tx.error ?? new Error('IndexedDB put aborted'));
   });
+}
+
+/** The cache is an optimisation, never a requirement: the image is already in
+ *  memory by the time it's saved, and a cold read just means fetching it again.
+ *  Browsers refuse storage in ways we don't control — Safari Private Browsing
+ *  rejects every Blob written to IndexedDB, a full disk refuses everything —
+ *  and none of that may cost the player their card art. Before these wrappers,
+ *  one refused save of a deck sheet rejected the shared sheet promise and took
+ *  every card cut from that sheet down with it ("212 failed", no art at all). */
+async function saveToCache(key: string, blob: Blob): Promise<void> {
+  try { await dbPut(key, blob); }
+  catch (err) { console.warn('[image-cache] could not save', key, err); }
+}
+
+async function readFromCache(key: string): Promise<Blob | undefined> {
+  try { return await dbGet(key); }
+  catch (err) { console.warn('[image-cache] could not read', key, err); return undefined; }
 }
 
 async function dbDelete(key: string): Promise<void> {
@@ -144,14 +164,18 @@ function loadSheetBlob(sheetUrl: string): Promise<Blob> {
   const cached = sheetBlobPromises.get(sheetUrl);
   if (cached) return cached;
   const p = (async () => {
-    let blob = await dbGet(sheetUrl);
+    let blob = await readFromCache(sheetUrl);
     if (!blob) {
       blob = await fetchBlob(sheetUrl);
-      await dbPut(sheetUrl, blob);
+      await saveToCache(sheetUrl, blob);
     }
     return blob;
   })();
   sheetBlobPromises.set(sheetUrl, p);
+  // A failed download must not stick: every card on the sheet shares this
+  // promise, so leaving the rejection cached would keep them all blank until
+  // the page reloads. Drop it so the next request tries the network again.
+  p.catch(() => { if (sheetBlobPromises.get(sheetUrl) === p) sheetBlobPromises.delete(sheetUrl); });
   return p;
 }
 
@@ -238,7 +262,7 @@ async function fetchAndStore(relativePath: string): Promise<Blob> {
   if (parsed && DECK_SHEETS[parsed.deck]) {
     const sheet = DECK_SHEETS[parsed.deck];
     const blob = await sliceTile(sheet, parsed.slot);
-    await dbPut(relativePath, blob);
+    await saveToCache(relativePath, blob);
     return blob;
   }
   // The board map is derived from the workshop mod's table image: auto-crop
@@ -248,13 +272,13 @@ async function fetchAndStore(relativePath: string): Promise<Blob> {
   // slot/site positions stay accurate.
   if (relativePath === 'assets/board/map.jpg') {
     const blob = await deriveBoardMap();
-    await dbPut(relativePath, blob);
+    await saveToCache(relativePath, blob);
     return blob;
   }
   // Non-card path → fall back to the per-path remote URL.
   const url = remoteUrlFor(relativePath);
   const blob = await fetchBlob(url);
-  await dbPut(relativePath, blob);
+  await saveToCache(relativePath, blob);
   return blob;
 }
 
@@ -315,7 +339,7 @@ function maybeEvictOldest(): void {
 
 export async function getImageBlobUrl(relativePath: string): Promise<string> {
   if (blobUrlCache.has(relativePath)) return blobUrlCache.get(relativePath)!;
-  let blob = await dbGet(relativePath);
+  let blob = await readFromCache(relativePath);
   // Detect blobs that were saved by the pre-fix slicer (Safari iOS, sheet
   // downsampled past its decode cap, lower-right tiles cropped from outside
   // the actually-decoded pixel data). They roundtripped to IndexedDB as
@@ -347,7 +371,11 @@ export async function bulkImport(
   onProgress: (p: BulkImportProgress) => void,
   concurrency = 6,
 ): Promise<BulkImportProgress> {
-  const existing = new Set(await dbKeys());
+  // Unreadable cache → treat as empty and import everything.
+  const existing = new Set(await dbKeys().catch((err) => {
+    console.warn('[image-cache] could not list cached images', err);
+    return [] as string[];
+  }));
   const pending = paths.filter(p => !existing.has(p));
   const state: BulkImportProgress = {
     total: pending.length,
@@ -369,7 +397,11 @@ export async function bulkImport(
       const p = pending[i];
       state.current = p;
       try { await fetchAndStore(p); state.done++; }
-      catch { state.failed++; }
+      catch (err) {
+        state.failed++;
+        // Name the image and the reason; a bare count gave nothing to go on.
+        console.error('[image-cache] import failed', p, err);
+      }
       onProgress({ ...state });
     }
   });
