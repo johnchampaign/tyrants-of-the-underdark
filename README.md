@@ -34,14 +34,33 @@ finds a bug that would wedge a live game:
 npm run ship
 ```
 
-That is exactly `npm run test:ai-drive && npm run build && npx wrangler pages
-deploy dist --project-name tyrants-online --branch main`. If you ever need the
-raw steps:
+That runs the test gates, `npm run build`, `npm run deploy:api` and then
+`npx wrangler pages deploy dist --project-name tyrants-online --branch main`.
+If you ever need the raw steps:
 
 ```sh
 npm run build
+npm run deploy:api      # the online API on the Linode (see below)
 npx wrangler pages deploy dist --project-name tyrants-online --branch main
 ```
+
+### Where the online API runs (since Nov 2026)
+
+The Pages Function `functions/api/[[path]].ts` only **forwards** `/api/*` to
+`https://tyrants-api.johnchampaign.com`. That is `tyrants-api.service` on John's
+Linode (port 8394, env in `/etc/tyrants-api.env`), reached through the
+`litrpgrec` Cloudflare tunnel. It runs `server/production.ts`, the same code the
+Function used to run. Why: Workers' free plan allows 10 ms of CPU per request,
+the median request used ~8 ms, and busy games and AI turns were being killed.
+On the Linode, `AI_MAX_STEPS` lets one request play a whole AI turn.
+
+- **Any engine, AI or server change needs `npm run deploy:api`.** A Pages
+  deploy alone ships only the client and the forwarder. `npm run ship` does
+  both. `deploy:api` needs ssh to the Linode, so it runs from John's machine.
+- If the Linode can't be reached, the Function runs the request itself, as it
+  did before. To force that (rollback), set the Pages env var
+  `TYRANTS_API_ORIGIN=local`. To roll back a bad API build, see the comment in
+  `scripts/deploy-api.sh`.
 
 > **Don't skip the sweep.** The `test:ai-drive` gate is what caught (and now
 > guards against) the forced-discard crash that locked online vs-AI games at

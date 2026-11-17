@@ -16,5 +16,5 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": false
   },
-  "include": ["src", "scripts"]
+  "include": ["src", "scripts", "server"]
 }

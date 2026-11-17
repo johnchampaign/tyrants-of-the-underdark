@@ -1,6 +1,7 @@
 # --- Node / build ---
 node_modules/
 dist/
+dist-api/
 build/
 *.tsbuildinfo
 
