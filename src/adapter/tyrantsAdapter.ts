@@ -219,6 +219,10 @@ function enumerateLegal(state: BgioState, actor: PlayerId): TyrantsAction[] {
   const hasAnyMapPresence = SITES.some(s => hasPresence(G, color, { site: s.id }));
   if (me.power >= 1) {
     for (const t of TROOP_SPACES) {
+      // Only active-section spaces are keys in G.troops; an out-of-play space
+      // reads as undefined, i.e. "empty", so skip it before the occupancy
+      // check — the deployTroop move rejects it (scripts/test-legal-deploy-sections.ts).
+      if (!(t.id in G.troops)) continue;
       if (G.troops[t.id]) continue;
       let ok: boolean;
       if (!hasAnyMapPresence) ok = true;
