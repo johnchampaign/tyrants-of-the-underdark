@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/check-install.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "build:api": "node scripts/build-api.mjs",
