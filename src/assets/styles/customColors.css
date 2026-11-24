@@ -1,0 +1,26 @@
+/* Custom color adjustments */
+body {
+  --primary-color: #000000; /* Black */
+  --secondary-color: #FFFFFF; /* White */
+  --accent-color: #FF0000; /* Red */
+  --text-color: #FFFFFF; /* White */
+  --background-color: #000000; /* Black */
+}
+
+/* Apply custom colors to elements */
+.board-state {
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+.control-marker {
+  background-color: var(--accent-color);
+}
+
+.influence-marker {
+  color: var(--primary-color);
+}
+
+.power-counter {
+  color: var(--secondary-color);
+}
